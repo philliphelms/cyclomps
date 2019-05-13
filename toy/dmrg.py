@@ -14,7 +14,8 @@ q = 0.       # Jump Left
 # Optimization
 tol = 1e-5
 maxIter = 10
-maxBondDim = 20
+maxBondDim = 10
+useCTF = True
 ##############################################
 
 # Create MPS #################################
@@ -75,15 +76,15 @@ for i in range(int(N)-1,0,-1):
     (U,S,V) = ctf.svd(M_reshape)
     M_reshape = V.reshape(n1,n2,n3)
     M[i] = ctf.transpose(M_reshape,axes=[1,0,2])
-    M[i-1] = ctf.einsum('klj,ji,i->kli',M[i-1],U,s)
+    M[i-1] = ctf.einsum('klj,ji,i->kli',M[i-1],U,S)
 ##############################################
 
 # Create Environment #########################
+print('Generating Environment')
 # Allocate empty environment
 F = []
 tmp = np.array([[[1.]]])+0.j
 F.append(ctf.from_nparray(tmp))
-print(F[0])
 for i in range(int(N/2)):
     tmp = np.zeros((min(2**(i+1),maxBondDim),4,min(2**(i+1),maxBondDim)))+0.j
     F.append(ctf.from_nparray(tmp))
@@ -94,72 +95,59 @@ tmp = np.array([[[1.]]])+0.j
 F.append(ctf.from_nparray(tmp))
 # Calculate initial environment
 for i in range(int(N)-1,0,-1):
-    tmp = np.einsum('eaf,cdf->eacd',M[i],F[i+1])
-    tmp = np.einsum('ydbe,eacd->ybac',W[i],tmp)
-    F[i] = np.einsum('bxc,ybac->xya',ctf.conj(M[i]),tmp)
+    tmp = ctf.einsum('eaf,cdf->eacd',M[i],F[i+1])
+    tmp = ctf.einsum('ydbe,eacd->ybac',W[i],tmp)
+    F[i] = ctf.einsum('bxc,ybac->xya',ctf.conj(M[i]),tmp)
 ##############################################
-
-# Optimization Sweeps ########################
-
-
-"""
 
 # Optimization Sweeps ########################
 converged = False
 iterCnt = 0
 E_prev = 0
 while not converged:
-# Right Sweep ----------------------------
+    # Right Sweep ----------------------------
     print('Right Sweep {}'.format(iterCnt))
     for i in range(N-1):
-        # Try to calculate diagonal:
-        mpo_diag = np.einsum('abnn->anb',W[i])
-        print(F[i+3].shape)
-        l_diag = np.einsum('lal->la',F[i])
-        r_diag = np.einsum('rbr->rb',F[i+1])
-        scr = np.einsum('la,anb->lnb',l_diag,mpo_diag)
-        print(np.einsum('lnb,rb->lnr',scr,r_diag))
-        H = np.einsum('jlp,lmin,kmq->ijknpq',F[i],W[i],F[i+1])
+        H = ctf.einsum('jlp,lmin,kmq->ijknpq',F[i],W[i],F[i+1])
         (n1,n2,n3,n4,n5,n6) = H.shape
-        H = np.reshape(H,(n1*n2*n3,n4*n5*n6))
-        print(H)
-        u,v = np.linalg.eig(H)
-        # select max eigenvalue
+        H = ctf.reshape(H,(n1*n2*n3,n4*n5*n6))
+        u,v = np.linalg.eig(ctf.to_nparray(H))
+        # Select max eigenvalue
         max_ind = np.argsort(u)[-1]
         E = u[max_ind]
-        v = v[:,max_ind]
-        print('\tEnergy at site {}= {}'.format(i,E))
-        M[i] = np.reshape(v,(n1,n2,n3))
+        v = ctf.from_nparray(v[:,max_ind])
+        print('\tEnergy at site {} = {}'.format(i,E))
+        M[i] = ctf.reshape(v,(n1,n2,n3))
         # Right Normalize
-        M_reshape = np.reshape(M[i],(n1*n2,n3))
-        (U,s,V) = np.linalg.svd(M_reshape,full_matrices=False)
-        M[i] = np.reshape(U,(n1,n2,n3))
-        M[i+1] = np.einsum('i,ij,kjl->kil',s,V,M[i+1])
+        M_reshape = ctf.reshape(M[i],(n1*n2,n3))
+        (U,S,V) = ctf.svd(M_reshape)
+        M[i] = ctf.reshape(U,(n1,n2,n3))
+        M[i+1] = ctf.einsum('i,ij,kjl->kil',S,V,M[i+1])
         # Update F
-        F[i+1] = np.einsum('jlp,ijk,lmin,npq->kmq',F[i],np.conj(M[i]),W[i],M[i])
-# Left Sweep -----------------------------
+        F[i+1] = ctf.einsum('jlp,ijk,lmin,npq->kmq',F[i],ctf.conj(M[i]),W[i],M[i])
+    # Left Sweep ------------------------------
     print('Left Sweep {}'.format(iterCnt))
     for i in range(N-1,0,-1):
-        H = np.einsum('jlp,lmin,kmq->ijknpq',F[i],W[i],F[i+1])
+        H = ctf.einsum('jlp,lmin,kmq->ijknpq',F[i],W[i],F[i+1])
         (n1,n2,n3,n4,n5,n6) = H.shape
-        H = np.reshape(H,(n1*n2*n3,n4*n5*n6))
-        u,v = np.linalg.eig(H)
-        # select max eigenvalue
+        H = ctf.reshape(H,(n1*n2*n3,n4*n5*n6))
+        u,v = np.linalg.eig(ctf.to_nparray(H))
+        # Select max eigenvalue
         max_ind = np.argsort(u)[-1]
         E = u[max_ind]
-        v = v[:,max_ind]
+        v = ctf.from_nparray(v[:,max_ind])
         print('\tEnergy at site {}= {}'.format(i,E))
-        M[i] = np.reshape(v,(n1,n2,n3))
+        M[i] = ctf.reshape(v,(n1,n2,n3))
         # Right Normalize 
-        M_reshape = np.swapaxes(M[i],0,1)
-        M_reshape = np.reshape(M_reshape,(n2,n1*n3))
-        (U,s,V) = np.linalg.svd(M_reshape,full_matrices=False)
-        M_reshape = np.reshape(V,(n2,n1,n3))
-        M[i] = np.swapaxes(M_reshape,0,1)
-        M[i-1] = np.einsum('klj,ji,i->kli',M[i-1],U,s)
+        M_reshape = ctf.transpose(M[i],(1,0,2))
+        M_reshape = ctf.reshape(M_reshape,(n2,n1*n3))
+        (U,S,V) = ctf.svd(M_reshape)
+        M_reshape = ctf.reshape(V,(n2,n1,n3))
+        M[i] = ctf.transpose(M_reshape,(1,0,2))
+        M[i-1] = ctf.einsum('klj,ji,i->kli',M[i-1],U,S)
         # Update F
-        F[i] = np.einsum('bxc,ydbe,eaf,cdf->xya',np.conj(M[i]),W[i],M[i],F[i+1])
-# Convergence Test -----------------------
+        F[i] = ctf.einsum('bxc,ydbe,eaf,cdf->xya',ctf.conj(M[i]),W[i],M[i],F[i+1])
+    # Convergence Test -----------------------
     if np.abs(E-E_prev) < tol:
         print('#'*75+'\nConverged at E = {}'.format(E)+'\n'+'#'*75)
         converged = True
@@ -169,5 +157,3 @@ while not converged:
     else:
         iterCnt += 1
         E_prev = E
-##############################################
-"""
