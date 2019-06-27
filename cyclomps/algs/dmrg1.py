@@ -82,6 +82,7 @@ def renormalize_right(mps0,mps1,state_avg=True):
     """
     if state_avg:
         mpiprint(5,'Renormalize (state avg) right step')
+        memprint(5,'  Start Renormalize Memory')
         
         # Determine info from mps0
         nStates = len(mps0)
@@ -137,6 +138,7 @@ def renormalize_right(mps0,mps1,state_avg=True):
     # Not state averaged renormalization
     else:
         mpiprint(5,'Renormalize right step')
+        memprint(5,'  Start Renormalize Memory')
 
         # Determine info from mps0
         nStates = len(mps1)
@@ -153,6 +155,7 @@ def renormalize_right(mps0,mps1,state_avg=True):
             wgt[state] = wgt
 
     # Return results
+    memprint(5,'  End Renormalize Memory')
     return mps0,mps1,EE,EEs,wgt 
 
 def renormalize_left(mps0,mps1,state_avg=True):
@@ -191,6 +194,7 @@ def renormalize_left(mps0,mps1,state_avg=True):
     """
     if state_avg:
         mpiprint(5,'Renormalize (state avg) left step')
+        memprint(5,'  Start Renormalize Memory')
         
         # Determine info from mps0
         nStates = len(mps1)
@@ -246,6 +250,7 @@ def renormalize_left(mps0,mps1,state_avg=True):
     # Not state averaged renormalization
     else:
         mpiprint(5,'Renormalize left step')
+        memprint(5,'  Start Renormalize Memory')
 
         # Determine info from mps0
         nStates = len(mps1)
@@ -262,6 +267,7 @@ def renormalize_left(mps0,mps1,state_avg=True):
             wgt[state] = wgt
 
     # Return results
+    memprint(5,'  End Renormalize Memory')
     return mps0,mps1,EE,EEs,wgt 
 
 def right_step(site,mps,mpo,env,
@@ -274,6 +280,7 @@ def right_step(site,mps,mpo,env,
     """
     t0 = time.time()
     mpiprint(6,'Start Right Step')
+    memprint(6,'  Right Step Start Memory')
     
     # Retrieve relevant tensors
     (mps0,) = retrieve_tensors(site,mpsList=mps)
@@ -299,6 +306,7 @@ def right_step(site,mps,mpo,env,
 
     # Print Total Sweep time
     timeprint(4,'Right Step Time: {} s'.format(time.time()-t0))
+    memprint(6,'  Right Step End Memory')
 
     # Return results
     return E,EE,EEs,wgt
@@ -361,6 +369,7 @@ def left_step(site,mps,mpo,env,
     """
     t0 = time.time()
     mpiprint(6,'Start Left Step')
+    memprint(6,'  Start Left Step Memory') 
     
     # Retrieve relevant tensors
     (mps0,) = retrieve_tensors(site-1,mpsList=mps)
@@ -386,6 +395,7 @@ def left_step(site,mps,mpo,env,
 
     # Print total sweep time
     timeprint(4,'Left Step Time: {} s'.format(time.time()-t0))
+    memprint(6,'  End Left Step Memory')
 
     # Return results
     return E,EE,EEs,wgt
@@ -457,6 +467,7 @@ def right_sweep(mps,mpo,env,
     mpiprint(2,'\n')
     mpiprint(2,'Beginning Right Sweep')
     mpiprint(2,'-'*50)
+    memprint(2,'  Start Right Sweep Memory')
     
     # Get info about mps
     nSite = len(mps[0])
@@ -488,6 +499,7 @@ def right_sweep(mps,mpo,env,
 
     # Print total sweep time
     timeprint(3,'Right Sweep Time: {} s'.format(time.time()-t0))
+    memprint(2,'  End Right Sweep Memory')
 
     # Return result
     return E,EE,EEs,wgt
@@ -559,6 +571,7 @@ def left_sweep(mps,mpo,env,
     mpiprint(2,'\n')
     mpiprint(2,'Beginning Left Sweep')
     mpiprint(2,'-'*50)
+    memprint(2,'  Start Left Sweep Memory')
     
     # Get info about mps
     nSite = len(mps[0])
@@ -590,6 +603,7 @@ def left_sweep(mps,mpo,env,
 
     # Print total sweep time
     timeprint(3,'Left Sweep Time: {} s'.format(time.time()-t0))
+    memprint(2,'  End Left Sweep Memory')
 
     # Return result
     return E,EE,EEs,wgt
@@ -699,6 +713,7 @@ def sweeps(mps,mpo,env,
     t0 = time.time()
     mpiprint(1,'\n\n')
     mpiprint(1,'Beginning DMRG Sweeping Algorithm')
+    memprint(1,'  Starting Sweeps Memory')
     mpiprint(1,'='*50)
 
     # Get some useful info
@@ -754,6 +769,7 @@ def sweeps(mps,mpo,env,
 
     # Print time for all sweeps
     timeprint(2,'Time for all sweeps: {} s'.format(time.time()-t0))
+    memprint(1,'  Ending Sweeps Memory')
 
     # Return Results
     return res
@@ -907,9 +923,9 @@ def dmrg(mpo,
     """
     t0 = time.time()
     mpiprint(0,'\n\n')
-    mpiprint(0,'#'*50)
     mpiprint(0,'Starting DMRG one-site calculation')
     memprint(1,'Initial Available Memory')
+    mpiprint(0,'#'*50)
 
     # Check inputs for problems
     if not hasattr(mbd,'__len__'): mbd = nparray([mbd])

@@ -36,6 +36,7 @@ einsum     = np.einsum
 qr         = np.linalg.qr
 summ       = np.sum
 prod       = np.prod
+sqrt       = np.sqrt
 
 def svd(ten):
     return np.linalg.svd(ten,full_matrices=False)

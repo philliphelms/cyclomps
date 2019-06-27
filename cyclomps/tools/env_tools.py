@@ -9,7 +9,6 @@ Date: June 2019
 
 """
 
-from cyclomps.tools.la import *
 from cyclomps.tools.utils import *
 from cyclomps.tools.mps_tools import mps_load_ten
 

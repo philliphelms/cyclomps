@@ -18,8 +18,6 @@ from shutil import copyfile
 import re
 import os
 from numpy import float_,complex_,int
-from numpy import sqrt as npsqrt
-from numpy import log2 
 
 def create_mps_list(d,mbd,nStates,
                     sparse=False,dtype=float_,
@@ -298,14 +296,14 @@ def calc_entanglement(S):
             i.e. EEs[i] = S[i]^2*log_2(S[i]^2)
     """
     # Ensure correct normalization
-    norm_fact = npsqrt(dot(S,conj(S)))
+    norm_fact = sqrt(dot(S,conj(S)))
     S /= norm_fact
 
     # Calc Entanglement Spectrum
     EEspec = -S*conj(S)*log2(S*conj(S))
 
     # Sum to get Entanglement Entropy
-    EE = sum(EEspec)
+    EE = summ(EEspec)
 
     # Print Results
     mpiprint(8,'Entanglement Entropy = {}'.format(EE))
@@ -411,7 +409,8 @@ def svd_ten(ten,split_ind,mbd=None,return_ent=True,return_wgt=True):
     # Print some results
     mpiprint(4,'Entanglement Entropy = {}'.format(EE))
     mpiprint(7,'EE Spectrum = ')
-    for i in range(len(EEs)):
+    nEEs = EEs.shape[0]
+    for i in range(nEEs):
         mpiprint(7,'   {}'.format(EEs[i]))
     mpiprint(5,'Discarded weights = {}'.format(wgt))
 

@@ -21,7 +21,7 @@ if RANK == 0:
         ind += 1
 
 # Use ctf or numpy
-USE_CTF = False
+USE_CTF = True
 USE_SPARSE = False
 
 # Printing Global Variables
@@ -33,10 +33,10 @@ OUTPUT_COLS = 5
 
 # Eigenproblem parameters
 DAVIDSON_TOL = 1e-8
-DAVIDSON_MAX_ITER = 1000
+DAVIDSON_MAX_ITER = 100
 USE_PRECOND = True
-ARNOLDI_TOL = 1e-16
-ARNOLDI_MAX_ITER = 1000
+ARNOLDI_TOL = 1e-8
+ARNOLDI_MAX_ITER = 100
 
 # Memory Global Variables
 import psutil

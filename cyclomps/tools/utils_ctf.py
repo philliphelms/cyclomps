@@ -10,6 +10,8 @@ import ctf
 from numpy import array as nparray
 from numpy import expand_dims as npexpand_dims
 from numpy import prod as npprod
+from numpy import sqrt as npsqrt
+from numpy import log2 as nplog2
 from numpy import complex128
 from numpy import complex64
 from numpy import complex_
@@ -42,8 +44,12 @@ einsum     = ctf.einsum
 qr         = ctf.qr
 summ       = ctf.sum
 svd        = ctf.svd
+def log2(a):
+    return ctf.from_nparray(nplog2(ctf.to_nparray(a)))
 def prod(a):
     return npprod(ctf.to_nparray(a))
+def sqrt(a):
+    return ctf.from_nparray(npsqrt(ctf.to_nparray(a)))
 
 # Tensor Manipulation
 conj       = ctf.conj
