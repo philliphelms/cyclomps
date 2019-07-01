@@ -281,6 +281,7 @@ def right_step(site,mps,mpo,env,
     t0 = time.time()
     mpiprint(6,'Start Right Step')
     memprint(6,'  Right Step Start Memory')
+    COMM.Barrier()
     
     # Retrieve relevant tensors
     (mps0,) = retrieve_tensors(site,mpsList=mps)
@@ -370,6 +371,7 @@ def left_step(site,mps,mpo,env,
     t0 = time.time()
     mpiprint(6,'Start Left Step')
     memprint(6,'  Start Left Step Memory') 
+    COMM.Barrier()
     
     # Retrieve relevant tensors
     (mps0,) = retrieve_tensors(site-1,mpsList=mps)
@@ -973,6 +975,7 @@ def dmrg(mpo,
         else:
             # Increase the maximum bond dim of the previous system
             mps = increase_bond_dim(mps,mbdi,fixed_bd=fixed_bd)
+        COMM.Barrier()
 
         # Set up initial env
         if mbd_ind == 0:
@@ -985,6 +988,7 @@ def dmrg(mpo,
                            dtype=dtype,
                            gSite=end_gauge,
                            subdir='env_mbd'+str(mbdi)+'_')
+        COMM.Barrier()
 
 
         # Run the DMRG Sweeps

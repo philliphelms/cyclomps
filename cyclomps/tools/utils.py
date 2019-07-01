@@ -8,6 +8,9 @@ Date: June 2019
 
 from cyclomps.tools.params import *
 from psutil import virtual_memory as vmem
+from shutil import copyfile as _copyfile
+import os
+import time
 
 if USE_CTF:
     from cyclomps.tools.utils_ctf import *
@@ -39,7 +42,7 @@ def timeprint(priority,msg):
     avoiding repeated printing of statements.
     """
     if (RANK == 0) and (priority <= VERBOSE_TIME):
-        print('  '*priority+msg)
+        print('  '*priority+msg+str(time.time()))
 
 def memprint(priority,msg):
     """ 
@@ -50,6 +53,26 @@ def memprint(priority,msg):
         tot_mem = bytes2human(vmem()[0])
         av_mem = bytes2human(vmem()[3])
         print('  '*priority+msg+': '+av_mem+' / '+tot_mem)
+
+def mkdir(path):
+    """
+    Wrapper for making a directory
+    """
+    if (RANK == 0):
+        try:
+            os.mkdir(path)
+        except:
+            pass
+
+def copyfile(old_fname,new_fname):
+    """
+    Wrapper to copy a file
+    """
+    if (RANK == 0):
+        try:
+            _copyfile(old_fname,new_fname)
+        except:
+            _copyfile(old_fname+'.npy',new_fname+'.npy')
 
 from cyclomps.tools.mps_tools import mps_load_ten
 from cyclomps.tools.mps_tools import mps_save_ten

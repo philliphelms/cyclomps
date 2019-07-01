@@ -7,6 +7,8 @@ Date: June 2019
 """
 from cyclomps.tools.params import *# import params
 import numpy as np
+from scipy.linalg import eig as sleig
+from scipy.linalg import orth as slorth
 
 
 # -------------------------------------------------
@@ -27,6 +29,11 @@ def save_ten(ten,fname):
 def load_ten(dim,fname,dtype=None):    
     return np.load(fname+'.npy')
 
+def to_nparray(a):
+    return a
+
+def from_nparray(a):
+    return a
 
 # -------------------------------------------------
 # Linear Algebra
@@ -37,7 +44,16 @@ qr         = np.linalg.qr
 summ       = np.sum
 prod       = np.prod
 sqrt       = np.sqrt
-
+log2       = np.log2
+orth       = slorth
+argsort    = np.argsort
+take       = np.take
+def eig(h):
+    E,vecs = sleig(h)
+    inds = np.argsort(E)[::-1]
+    E = E[inds]
+    vecs = vecs[:,inds]
+    return E,vecs
 def svd(ten):
     return np.linalg.svd(ten,full_matrices=False)
 

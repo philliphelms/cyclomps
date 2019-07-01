@@ -10,12 +10,15 @@ import ctf
 from numpy import array as nparray
 from numpy import expand_dims as npexpand_dims
 from numpy import prod as npprod
+from numpy import argsort as npargsort
 from numpy import sqrt as npsqrt
 from numpy import log2 as nplog2
 from numpy import complex128
 from numpy import complex64
 from numpy import complex_
 from numpy import float_
+from scipy.linalg import eig as sleig
+from scipy.linalg import orth as slorth
 
 # Tensor Allocation
 def array(tens,dtype=None,copy=True,subok=False,ndimin=0):
@@ -44,12 +47,38 @@ einsum     = ctf.einsum
 qr         = ctf.qr
 summ       = ctf.sum
 svd        = ctf.svd
+take       = ctf.take
+def argsort(vals):
+    vals = to_nparray(vals)
+    inds = npargsort(vals)
+    return inds.tolist()
 def log2(a):
-    return ctf.from_nparray(nplog2(ctf.to_nparray(a)))
+    try:
+        res = ctf.from_nparray(nplog2(ctf.to_nparray(a)))
+    except:
+        res = 0.
+    return res
 def prod(a):
     return npprod(ctf.to_nparray(a))
 def sqrt(a):
-    return ctf.from_nparray(npsqrt(ctf.to_nparray(a)))
+    a = ctf.to_nparray(a)
+    a = npsqrt(a)
+    a = ctf.from_nparray(a)
+    return a
+def eig(H):
+    H = to_nparray(H)
+    E,vecs = sleig(H)
+    inds = npargsort(E)[::-1]
+    E = E[inds]
+    vecs = vecs[:,inds]
+    vecs = from_nparray(vecs)
+    return E,vecs
+def orth(v):
+    v = to_nparray(v)
+    v = slorth(v)
+    v = from_nparray(v)
+    return v
+
 
 # Tensor Manipulation
 conj       = ctf.conj
@@ -94,8 +123,6 @@ if USE_SPARSE:
         return ctf.zeros(shape,dtype=dtype,sp=True)
     def load_ten(dim,fname,dtype=None,sp=True):
         ten = zeros(dim,dtype=dtype,sp=sp)
-        print('Loading Tensor')
         ctf.svd(ten)
-        print('Loaded Tensor\n')
         ten.read_from_file(fname)
         return ten

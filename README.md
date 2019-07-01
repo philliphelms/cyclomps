@@ -6,6 +6,9 @@ algorithm using Cyclops Tensor Framework (CTF).
 Currently, the two main dependencies are the python version of 
 CTF and, if using the davidson diagonalization routine, pyscf.
 
+## Known Bugs
+* State averaging is not stable
+
 ## To Do List
 * Add noise to prevent convergence to local minima
 * Implement 2-site algorithm

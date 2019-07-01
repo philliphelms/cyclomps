@@ -19,7 +19,7 @@ def test_dmrg1():
               env_subdir='test_env',
               nStates=2,
               fixed_bd=True,
-              state_avg=True,
+              state_avg=False,
               orthonormalize=False,
               end_gauge=0,
               left=True)

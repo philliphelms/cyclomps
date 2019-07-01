@@ -13,7 +13,8 @@ from cyclomps.tools.utils import *
 from cyclomps.tools.params import *
 from cyclomps.tools.mps_tools import mps_load_ten
 from cyclomps.tools.env_tools import env_load_ten
-from pyscf.lib import eig as davidson
+from pyscf.lib import eig as davidson_pyscf
+from cyclomps.tools.la_tools import davidson
 from scipy.sparse.linalg import eigs as arnoldi
 from scipy.sparse.linalg import LinearOperator
 from numpy import complex_
@@ -62,30 +63,26 @@ def davidson1(mps,mpo,envl,envr):
     # Determine initial guess
     guess = []
     for state in range(nStates):
-        if USE_CTF: 
-            guess.append(to_nparray(ravel(mps[state])))
-        else:
-            guess.append(ravel(mps[state]))
+        guess.append(ravel(mps[state]))
 
     # Send to davidson algorithm
     E,vecso = davidson(hop,guess,precond,
                          nroots=nStates,pick=pick_eigs,
                          follow_state=False,tol=DAVIDSON_TOL,
                          max_cycle=DAVIDSON_MAX_ITER)
-    E = -E 
+
     # Sort results
+    E = -E 
     inds = npargsort(npreal(E))[::-1]
+
     # davidson occasionally does not return enough states
-    if hasattr(E,'__len__'):
+    if hasattr(E,'__len__') and (len(E) > 1):
         E = E[inds[:nStates]]
-        vecs = npzeros((len(vecso[0]),nStates),dtype=type(vecso[0][0]))
+        vecs = zeros((vecso[0].shape[0],nStates),dtype=type(vecso[0][0]))
         for vec_ind in range(min(nStates,len(inds))):
             vecs[:,vec_ind] = vecso[inds[vec_ind]]
     else:
-        vecs = vecso
-
-    # Convert vecs back to ctf if needed
-    if USE_CTF: vecs = from_nparray(vecs)
+        vecs = vecso[0]
 
     # Check the overlap
     # PH - Need to implement
@@ -93,6 +90,7 @@ def davidson1(mps,mpo,envl,envr):
 
     # Convert vecs into original mps shape
     mps = vec2mps(vecs,mps)
+    memprint(0,'\n\n')
     return E,mps,ovlp
 
 def pick_eigs(w,v,nroots,x0):
@@ -100,9 +98,10 @@ def pick_eigs(w,v,nroots,x0):
     Used in Davidson function to pick eigenvalues
     """
     mpiprint(10,'Picking Eigs in davidson or arnoldi')
-    idx = npargsort(npreal(w))
-    w = w[idx]
-    v = v[:,idx]
+    # Already sorted 
+    idx = argsort(npreal(w))
+    w = w[::-1]
+    v = v[:,::-1]
     return w,v,idx
 
 def make_ham_func1(mps,mpo,envl,envr):
@@ -137,10 +136,19 @@ def make_ham_func1(mps,mpo,envl,envr):
         memprint(9,'Inside hop function')
         mpiprint(9,'Inside hop function')
         # Process input
-        if USE_CTF: x = from_nparray(x)
+        memprint(0,'Before Conversion from np array')
+        memprint(0,'After conve from np array')
+
+        memprint(0,'Before reshape')
         x = reshape(x,mps[0].shape)
-        res = zeros_like(x,dtype=complex_)
+        memprint(0,'After Reshape')
+        
+        memprint(0,'Before zeros_like')
+        res = zeros(x.shape,dtype=x.dtype)
+        memprint(0,'After zeros_like')
+
         # Loop over all operators
+        memprint(0,'Before calc_ham')
         for op in range(len(mpo)):
             if mpo[op] is None:
                 tmp = einsum('Bcb,apb->Bcap',envr[op],x)
@@ -149,14 +157,19 @@ def make_ham_func1(mps,mpo,envl,envr):
                 tmp = einsum('Bcb,apb->Bcap',envr[op],x)
                 tmp = einsum('dqpc,Bcap->dqBa',mpo[op],tmp)
                 res +=einsum('Ada,dqBa->AqB',envl[op],tmp)
+        memprint(0,'After calc_ham')
+
+        memprint(0,'Before ravel')
         res = ravel(res)
-        if USE_CTF: res = to_nparray(res)
+        memprint(0,'After ravel')
+
+        memprint(0,'Before convert to np')
+        memprint(0,'After convert to np')
         return -res
 
     # Create Preconditioner Function
     if USE_PRECOND:
         diag = ravel(calc_diag1(mpo,envl,envr))
-        if USE_CTF: diag = to_nparray(diag)
         def precond(dx,e,x0):
             return dx/(diag-e)
     else:
@@ -324,12 +337,10 @@ def exact1(mps,mpo,envl,envr):
     # Compute the full Hamiltonian
     H = calc_ham1(mps,mpo,envl,envr)
 
-    # Diagonalize and sort
-    if USE_CTF: H = to_nparray(H)
-    E,vecs = sla.eig(H)
-    inds = npargsort(E)[::-1]
-    E = E[inds[:nState]]
-    vecs = vecs[:,inds[:nState]]
+    # Diagonalize and keep some states
+    E,vecs = eig(-H)
+    E = -E[:nState]
+    vecs = -vecs[:,:nState]
 
     # Convert vecs back to ctf if needed
     if USE_CTF: vecs = from_nparray(vecs)
