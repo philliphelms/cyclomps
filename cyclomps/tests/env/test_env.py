@@ -4,7 +4,7 @@ from cyclomps.tools.utils import *
 class test_env(unittest.TestCase):
     
     def test_empty_mpo(self):
-        mpiprint(0,'\n'+'='*20+'\nTesting Environment List Creation\n'+'='*20)
+        mpiprint(0,'\n'+'='*50+'\nTesting Initial Environment Using Identity MPO\n'+'-'*50)
         # Create an MPS
         from cyclomps.tools.mps_tools import create_mps_list,make_mps_list_right
         from cyclomps.tools.env_tools import calc_env,env_load_ten
@@ -27,8 +27,105 @@ class test_env(unittest.TestCase):
             (nx,ny) = ident_check.shape
             I = eye(nx)
             diff = summ(abss(I-ident_check))
-            mpiprint(0,'Difference from identity = {}'.format(diff))
             self.assertTrue(diff < 1e-8)
         # We can check the norm to see if it agrees
-        mpiprint(0,'Passed\n'+'='*20)
+        mpiprint(0,'Passed\n'+'='*50)
 
+    def test_tasep_mpo(self):
+        mpiprint(0,'\n'+'='*50+'\nTesting Initial Environment Using TASEP MPO\n'+'-'*50)
+        # Create an MPS
+        from cyclomps.tools.mps_tools import create_mps_list,make_mps_list_right,load_mps_list,calc_mps_norm
+        d = 2
+        N = 4
+        mbd = 10
+        nState = 4
+        mpsList = create_mps_list([d]*N,mbd,nState)
+        # Load the MPO
+        from cyclomps.mpo.tasep import return_mpo
+        mpo = return_mpo(N,(0.5,0.5,1.))
+        # Create a function to compute energy 
+        def calc_energy(mpsL,mpo):
+            mps = load_mps_list(mpsL)
+            E = zeros(nState,dtype=mps[0][0].dtype)
+            for state in range(nState):
+                E[state] = einsum('apb,bqc,crd,dse,iPpj,jQqk,kRrl,lSsm,APB,BQC,CRD,DSE->',
+                                     mps[state][0],mps[state][1],mps[state][2],mps[state][3],
+                                     mpo[0][0],mpo[0][1],mpo[0][2],mpo[0][3],
+                                     conj(mps[state][0]),conj(mps[state][1]),conj(mps[state][2]),conj(mps[state][3]))
+                E[state] /= calc_mps_norm(mpsL,state=state)
+            return E
+        # Compute energy
+        E1 = calc_energy(mpsList,mpo)
+        # Right Canonicalize
+        mpsList = make_mps_list_right(mpsList)
+        E2 = calc_energy(mpsList,mpo)
+        # Calculate the environment
+        from cyclomps.tools.env_tools import calc_env,env_load_ten,load_env_list
+        envList = calc_env(mpsList,mpo)
+        # Calculate the energy using the environment
+        env = load_env_list(envList)
+        mps = load_mps_list(mpsList)
+        E3 = zeros(nState,dtype=mps[0][0].dtype)
+        for state in range(nState):
+            E3[state] = einsum('Ala,apb,lPpr,APB,Brb->',env[0][0],mps[0][0],mpo[0][0],conj(mps[0][0]),env[0][1])
+            E3[state] /= calc_mps_norm(mpsList,state=state)
+        # Check Results
+        self.assertTrue(abss(E1[0]-E2[0]) < 1e-10)
+        self.assertTrue(abss(E1[0]-E3[0]) < 1e-10)
+        mpiprint(0,'Passed\n'+'='*50)
+
+    def test_tasep_mpo(self):
+        mpiprint(0,'\n'+'='*50+'\nTesting Initial & Moved Environments Using TASEP MPO\n'+'-'*50)
+        # Create an MPS
+        from cyclomps.tools.mps_tools import create_mps_list,make_mps_list_right,load_mps_list,calc_mps_norm,move_gauge
+        d = 2
+        N = 4
+        mbd = 10
+        nState = 4
+        mpsList = create_mps_list([d]*N,mbd,nState)
+        # Load the MPO
+        from cyclomps.mpo.tasep import return_mpo
+        mpo = return_mpo(N,(0.5,0.5,1.))
+        # Create a function to compute energy 
+        def calc_energy(mpsL,mpo):
+            mps = load_mps_list(mpsL)
+            E = zeros(nState,dtype=mps[0][0].dtype)
+            for state in range(nState):
+                E[state] = einsum('apb,bqc,crd,dse,iPpj,jQqk,kRrl,lSsm,APB,BQC,CRD,DSE->',
+                                     mps[state][0],mps[state][1],mps[state][2],mps[state][3],
+                                     mpo[0][0],mpo[0][1],mpo[0][2],mpo[0][3],
+                                     conj(mps[state][0]),conj(mps[state][1]),conj(mps[state][2]),conj(mps[state][3]))
+                E[state] /= calc_mps_norm(mpsL,state=state)
+            return E
+        # Compute energy
+        E1 = calc_energy(mpsList,mpo)
+        # Right Canonicalize
+        mpsList = make_mps_list_right(mpsList)
+        E2 = calc_energy(mpsList,mpo)
+        # Calculate the environment
+        from cyclomps.tools.env_tools import calc_env,env_load_ten,load_env_list
+        envList = calc_env(mpsList,mpo,gSite=0)
+        # Calc energy from initial environment
+        env = load_env_list(envList)
+        mps = load_mps_list(mpsList)
+        E3 = zeros(nState,dtype=mps[0][0].dtype)
+        for state in range(nState):
+            E3[state] = einsum('Ala,apb,lPpr,APB,Brb->',env[0][0],mps[0][0],mpo[0][0],conj(mps[0][0]),env[0][1])
+            E3[state] /= calc_mps_norm(mpsList,state=state)
+        # Calculate the energy using the environment
+        mpsList = move_gauge(mpsList,0,2)
+        envList = calc_env(mpsList,mpo,gSite=2)
+        env = load_env_list(envList)
+        mps = load_mps_list(mpsList)
+        E4 = zeros(nState,dtype=mps[0][0].dtype)
+        for state in range(nState):
+            E4[state] = einsum('Ala,apb,lPpr,APB,Brb->',env[0][2],mps[0][2],mpo[0][2],conj(mps[0][2]),env[0][3])
+            E4[state] /= calc_mps_norm(mpsList,state=state)
+        # Check Results
+        self.assertTrue(summ(abss(E1[0]-E2[0])) < 1e-10)
+        self.assertTrue(summ(abss(E1[0]-E3[0])) < 1e-10)
+        self.assertTrue(summ(abss(E1[0]-E4[0])) < 1e-10)
+        mpiprint(0,'Passed\n'+'='*50)
+
+if __name__ == "__main__":
+    unittest.main()

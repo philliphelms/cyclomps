@@ -47,7 +47,7 @@ def calc_rdm(ten,swp_dir):
         ten = reshape(ten,(n1,n2*n3))
         return einsum('ij,ik->jk',ten,conj(ten))
 
-def renormalize_right(mps0,mps1,state_avg=True):
+def renormalize_right(mps0,mps1,state_avg=True,target_state=0):
     """
     Do the renormalization step to the right, using state averaging
 
@@ -64,6 +64,9 @@ def renormalize_right(mps0,mps1,state_avg=True):
             Specify whether to use the state averaging procedure to target
             multiple states when doing the renormalization step.
             Default : True
+        target_state : int
+            The state to use for the environment if state averaging is
+            not employed
 
     Returns:
         mps0 : 1D Array
@@ -80,26 +83,25 @@ def renormalize_right(mps0,mps1,state_avg=True):
             The discarded weight for each state
 
     """
+    mpiprint(5, 'Renormalize right Step')
+    memprint(5, '  Start Renormalize Memory')
+
+    # Determine info from mps0
+    nStates = len(mps0)
+    (n1,n2,n3) = mps0[0].shape
+
+    # Calculate Entanglement Entropy
+    EE = [None]*nStates
+    EEs= [None]*nStates
+    wgt= [None]*nStates
+    #for state in range(nStates):
+    #    _,_,EE_,EEs_,wgt_ = move_gauge_right_tens(mps0[state],mps1[state])
+    #    EE[state] = EE_
+    #    EEs[state] = EEs_
+    #    wgt[state] = wgt
+
     if state_avg:
-        mpiprint(5,'Renormalize (state avg) right step')
-        memprint(5,'  Start Renormalize Memory')
-        
-        # Determine info from mps0
-        nStates = len(mps0)
-        (n1,n2,n3) = mps0[0].shape
-
-        # Calculate Entanglement Entropy 
-        # PH - Speed up (so we don't calc svd)
-        EE = [None]*nStates
-        EEs = [None]*nStates
-        wgt = [None]*nStates
-        for state in range(nStates):
-            _,_,EE_,EEs_,wgt_ = move_gauge_right_tens(mps0[state],mps1[state])
-            EE[state] = EE_
-            EEs[state] = EEs_
-            wgt[state] = wgt
-
-        # Compute the reduced density matrix
+        # Compute rdm
         w = 1./float(nStates)
         for state in range(nStates):
             if state == 0:
@@ -124,41 +126,24 @@ def renormalize_right(mps0,mps1,state_avg=True):
 
         # Put results into mps0 and mps1
         if USE_CTF: vecs = from_nparray(vecs)
-        for state in range(nStates):
-            # Put resulting eigenvectors into mps0
-            mps0_new = zeros((n1,n2,n3),dtype=type(vecs[0,0]))
-            mps0_new[:,:,:min(n3,n1*n2)] = reshape(vecs,(n1,n2,min(n3,n1*n2)))
 
-            # Multiply into next site to transfer gauge
-            mps1[state] = einsum('apb,apc,cqd->bqd',conj(mps0_new),mps0[state],mps1[state])
+        # Store new mps tensor
+        mps0_new = zeros((n1,n2,n3),dtype=type(vecs[0,0]))
+        mps0_new[:,:,:min(n3,n1*n2)] = reshape(vecs,(n1,n2,min(n3,n1*n2)))
 
-            # Write over mps0
-            mps0[state] = mps0_new
-
-    # Not state averaged renormalization
     else:
-        mpiprint(5,'Renormalize right step')
-        memprint(5,'  Start Renormalize Memory')
+        # Compute new mps tensor via svd
+        mps0_new,mps1_new,_,_,_ = move_gauge_right_tens(mps0[target_state],mps1[target_state])
+    
+    for state in range(nStates):
+        # Push gauge into neighboring site
+        mps1[state] = einsum('ApB,Apb,bqc->Bqc',conj(mps0_new),mps0[state],mps1[state])
+        # Put new mps tensor into mps
+        mps0[state] = copy.deepcopy(mps0_new)
 
-        # Determine info from mps0
-        nStates = len(mps1)
-        (n1,n2,n3) = mps1[0].shape
-
-        # Move gauge state-by-state
-        EE = [None]*nStates
-        EEs = [None]*nStates
-        wgt = [None]*nStates
-        for state in range(nStates):
-            mps0[state],mps1[state],EE_,EEs_,wgt_ = move_gauge_right_tens(mps0[state],mps1[state])
-            EE[state] = EE_
-            EEs[state] = EEs_
-            wgt[state] = wgt
-
-    # Return results
-    memprint(5,'  End Renormalize Memory')
     return mps0,mps1,EE,EEs,wgt 
 
-def renormalize_left(mps0,mps1,state_avg=True):
+def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
     """
     Do the renormalization step to the left (from mps1 -> mps0)
     using state averaging
@@ -176,6 +161,9 @@ def renormalize_left(mps0,mps1,state_avg=True):
             Specify whether to use the state averaging procedure to target
             multiple states when doing the renormalization step.
             Default : True
+        target_state : int
+            The state to use for the environment if state averaging is
+            not employed
 
     Returns:
         mps0 : 1D Array
@@ -192,26 +180,26 @@ def renormalize_left(mps0,mps1,state_avg=True):
             The discarded weight for each state
 
     """
+    mpiprint(5, 'Renormalize left Step')
+    memprint(5, '  Start Renormalize Memory')
+
+    # Determine info from mps0
+    nStates = len(mps1)
+    (n1,n2,n3) = mps1[0].shape
+
+    # Calculate Entanglement Entropy
+    EE = [None]*nStates
+    EEs = [None]*nStates
+    wgt = [None]*nStates
+    #for state in range(nStates):
+    #    mps0[state],mps1[state],EE_,EEs_,wgt_ = move_gauge_left_tens(mps0[state],mps1[state])
+    #    EE[state] = EE_
+    #    EEs[state] = EEs_
+    #    wgt[state] = wgt
+
     if state_avg:
-        mpiprint(5,'Renormalize (state avg) left step')
-        memprint(5,'  Start Renormalize Memory')
-        
-        # Determine info from mps0
-        nStates = len(mps1)
-        (n1,n2,n3) = mps1[0].shape
-
-        # Calculate Entanglement Entropy 
-        EE = [None]*nStates
-        EEs = [None]*nStates
-        wgt = [None]*nStates
-        for state in range(nStates):
-            mps0[state],mps1[state],EE_,EEs_,wgt_ = move_gauge_left_tens(mps0[state],mps1[state])
-            EE[state] = EE_
-            EEs[state] = EEs_
-            wgt[state] = wgt
-
-        # Compute the reduced density matrix
-        w = 1./nStates
+        # Compute rdm
+        w = 1./float(nStates)
         for state in range(nStates):
             if state == 0:
                 rdm = w*calc_rdm(mps1[state],'left')
@@ -236,38 +224,23 @@ def renormalize_left(mps0,mps1,state_avg=True):
 
         # Put results into mps0 and mps1
         if USE_CTF: vecs = from_nparray(vecs)
-        for state in range(nStates):
-            # Put resulting eigenvectors into mps0
-            mps1_new = zeros((n1,n2,n3),dtype=type(vecs[0,0]))
-            mps1_new[:min(n1,n2*n3),:,:] = reshape(vecs,(min(n1,n2*n3),n2,n3))
 
-            # Multiply into next site to transfer gauge
-            mps0[state] = einsum('apb,bqc,dqc->apd',mps0[state],mps1[state],conj(mps1_new))
+        # Put resulting eigenvectors into mps1
+        mps1_new = zeros((n1,n2,n3),dtype=vecs.dtype)
+        mps1_new[:min(n1,n2*n3),:,:] = reshape(vecs,(min(n1,n2*n3),n2,n3))
 
-            # Write over mps0
-            mps1[state] = mps1_new
-
-    # Not state averaged renormalization
     else:
-        mpiprint(5,'Renormalize left step')
-        memprint(5,'  Start Renormalize Memory')
+        # Compute new mps tensor via svd
+        mps0_new,mps1_new,_,_,_ = move_gauge_left_tens(mps0[target_state],mps1[target_state])
+    
+    for state in range(nStates):
 
-        # Determine info from mps0
-        nStates = len(mps1)
-        (n1,n2,n3) = mps1[0].shape
+        # Multiply into next site to transfer gauge
+        mps0[state] = einsum('apb,bqc,Bqc->apB',mps0[state],mps1[state],conj(mps1_new))
 
-        # Move gauge state-by-state
-        EE = [None]*nStates
-        EEs = [None]*nStates
-        wgt = [None]*nStates
-        for state in range(nStates):
-            mps0[state],mps1[state],EE_,EEs_,wgt_ = move_gauge_left_tens(mps0[state],mps1[state])
-            EE[state] = EE_
-            EEs[state] = EEs_
-            wgt[state] = wgt
+        # Write over mps0
+        mps1[state] = copy.deepcopy(mps1_new)
 
-    # Return results
-    memprint(5,'  End Renormalize Memory')
     return mps0,mps1,EE,EEs,wgt 
 
 def right_step(site,mps,mpo,env,

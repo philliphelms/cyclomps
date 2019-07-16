@@ -18,9 +18,10 @@ from shutil import copyfile
 import re
 import os
 from numpy import float_,complex_,int
+import copy
 
 def create_mps_list(d,mbd,nStates,
-                    sparse=False,dtype=float_,
+                    sparse=False,dtype=complex_,
                     periodic=False,fixed_bd=False,
                     subdir='mps'):
     """
@@ -151,6 +152,27 @@ def create_rand_mps(d,mbd,state,
 
     return mps 
 
+def load_mps(mpsList,state):
+    """
+    Load the full mps and return it as a list
+    """
+    N = len(mpsList[state])
+    mps = [None]*N
+    for site in range(N):
+        mps[site] = mps_load_ten(mpsList,state,site)
+    return mps
+
+def load_mps_list(mpsList):
+    """
+    Load a full mps list, returned as a list of lists
+    """
+    nStates = len(mpsList)
+    N = len(mpsList[0])
+    mps = [None]*nStates
+    for state in range(nStates):
+        mps[state] = load_mps(mpsList,state)
+    return mps
+ 
 def mps_load_ten(mpsList,state,site):
     """
     Load a tensor from an MPS
@@ -295,6 +317,8 @@ def calc_entanglement(S):
             The von neumann entanglement spectrum
             i.e. EEs[i] = S[i]^2*log_2(S[i]^2)
     """
+    # Create a copy of S
+    S = copy.deepcopy(S)
     # Ensure correct normalization
     norm_fact = sqrt(dot(S,conj(S)))
     S /= norm_fact
@@ -659,7 +683,9 @@ def move_gauge_left(mpsList,state,site,return_ent=True,return_wgt=True):
     ten2 = mps_load_ten(mpsList,state,site)
 
     # Transfer the gauge
+    init_contraction = einsum('ijk,klm->ijlm',ten1,ten2)
     ten1,ten2,EE,EEs,wgt = move_gauge_left_tens(ten1,ten2)
+    final_contraction = einsum('ijk,klm->ijlm',ten1,ten2)
     
     # Save the results
     mps_save_ten(ten1,mpsList,state,site-1)
@@ -779,11 +805,11 @@ def move_all_gauge_right(mpsList,site,return_ent=True,return_wgt=True):
     nStates = len(mpsList)
 
     # Move gauge for each state
-    EE = [None]
-    EEs = [None]
-    wgt = [None]
+    EE = [None]*nStates
+    EEs = [None]*nStates
+    wgt = [None]*nStates
     for state in range(nStates):
-        mpsList,EE_,EEs_,wgt_ = move_gauge_right(mpsList,state,site)
+        _,EE_,EEs_,wgt_ = move_gauge_right(mpsList,state,site)
         EE[state] = EE_
         EEs[state] = EEs_
         wgt[state] = wgt_
@@ -858,6 +884,66 @@ def make_mps_list_right(mpsList):
         mpsList = make_mps_right(mpsList,state)
     return mpsList
 
+def make_mps_left(mpsList,state):
+    """
+    Make the MPS left canonical
+
+    Args:
+        mpsList : 1D Array of Matrix Product States
+            A list containing multiple matrix product 
+            states, each of which is a list of a dictionary,
+            which contains the filename and dimensions of 
+            the local MPS tensor. 
+        state : int
+            The state which will be right canonicalized
+
+    Kwargs:
+        norm : string
+            If norm is not None, then the MPS will be normalized
+            at each site to 1 with the L1 norm if norm == 'L1' 
+            or the L2 norm if norm == 'L2'
+            Default : norm = None
+
+    Returns:
+        mpsList : 1D Array of Matrix Product States
+            A left canonicalized version of the input MPS
+    """
+    mpiprint(5,'\tRight Canonicalizing state {}'.format(state))
+    nState = len(mpsList)
+    N = len(mpsList[0])
+    # Loop backwards 
+    for site in range(N-1):
+        mpsList = move_gauge_right(mpsList,state,site,return_ent=False,return_wgt=False)
+    return mpsList
+
+def make_mps_list_left(mpsList):
+    """
+    Make all the MPS in a list left canonical
+
+    Args:
+        mpsList : 1D Array of Matrix Product States
+            A list containing multiple matrix product 
+            states, each of which is a list of a dictionary,
+            which contains the filename and dimensions of 
+            the local MPS tensor. 
+
+    Kwargs:
+        norm : string
+            If norm is not None, then the MPS will be normalized
+            at each site to 1 with the L1 norm if norm == 'L1' 
+            or the L2 norm if norm == 'L2'
+            Default : norm = None
+
+    Returns:
+        mpsList : 1D Array of Matrix Product States
+            A left canonicalized version of the input MPS
+    """
+    mpiprint(5,'Making all mps left canonical')
+    nStates = len(mpsList)
+    for state in range(nStates):
+        mpsList = make_mps_left(mpsList,state)
+    return mpsList
+
 def move_gauge(mpsList,gauge_init,gauge_fin):
     """
     Move the gauge from the site gauge_init
@@ -881,11 +967,11 @@ def move_gauge(mpsList,gauge_init,gauge_fin):
     if gauge_init > gauge_fin:
         # Must move left
         for site in range(gauge_init-1,gauge_fin,-1):
-            mpsList = move_all_gauge_left(mpsList,site)
+            _ = move_all_gauge_left(mpsList,site)
     elif gauge_init < gauge_fin:
         # Must move left
         for site in range(gauge_init,gauge_fin):
-            mpsList = move_all_gauge_right(mpsList,site)
+            _ = move_all_gauge_right(mpsList,site)
     return mpsList
 
 def mps_conj(mpsList,copy=False,copy_subdir='mps_conj'):
@@ -991,6 +1077,19 @@ def mps_copy(mpsList,subdir='mps'):
         mpsListCopy.append(mps)
 
     return mpsListCopy
+
+def calc_mps_norm(mps,state=0):
+    """ 
+    Compute the norm of an mps
+    """
+    N = len(mps[0])
+    norm_env = ones((1,1),dtype=mps[0][0]['dtype'])
+    for site in range(N):
+        mps_ten = mps_load_ten(mps,state,site)
+        norm_env = einsum('Aa,apb->Apb',norm_env,mps_ten)
+        norm_env = einsum('Apb,ApB->Bb',norm_env,conj(mps_ten))
+    norm = norm_env[0,0]
+    return norm
 
 def contract_config(mpsList,config,norm=None,state=0,gSite=0):
     """

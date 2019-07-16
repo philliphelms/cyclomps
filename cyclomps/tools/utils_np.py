@@ -19,7 +19,7 @@ zeros      = np.zeros
 zeros_like = np.zeros_like
 
 def rand(dim,dtype=None):
-    return np.random.random(dim).astype(dtype)
+    return np.random.random(dim).astype(dtype)+1.j*np.random.random(dim).astype(dtype)
 
 def save_ten(ten,fname):
     np.save(fname,ten)
@@ -37,7 +37,7 @@ qr         = np.linalg.qr
 summ       = np.sum
 prod       = np.prod
 sqrt       = np.sqrt
-
+log2       = np.log2
 def svd(ten):
     return np.linalg.svd(ten,full_matrices=False)
 

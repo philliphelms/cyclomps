@@ -102,6 +102,27 @@ def alloc_env(mpsL,mpoL,dtype=None,subdir='env'):
     # Return list of environments
     return envL
 
+def load_env(envList,op):
+    """
+    Load a full environment and return it as a list
+    """
+    nOp = len(envList)
+    N = len(envList[op])
+    env = [None]*N
+    for site in range(N):
+        env[site] = env_load_ten(envList,op,site)
+    return env
+
+def load_env_list(envList):
+    """
+    Load a full environment list and return it as a list of environments
+    """
+    nOp = len(envList)
+    env = [None]*nOp
+    for op in range(nOp):
+        env[op] = load_env(envList,op)
+    return env
+
 def env_load_ten(envList,op,site):
     """
     Load a tensor from an env list
@@ -333,12 +354,12 @@ def update_env_right(mpsList,mpoList,envList,site,mpslList=None,state=0):
 
         # Do Contraction to update env
         if mpoList[op][site] is None:
-            envNew = einsum('Bcb,BqA->cbqA',envLoc,conj(mpslLoc))
-            envNew = einsum('bpa,cbqA->Aca',mpsLoc,envNew)
+            envNew = einsum('Ala,APB->alPB',envLoc,conj(mpslLoc))
+            envNew = einsum('aPb,alPB->Blb',mpsLoc,envNew)
         else:
-            envNew = einsum('Bcb,BqA->cbqA',envLoc,conj(mpslLoc))
-            envNew = einsum('cqpd,cbqA->pdbA',mpoList[op][site],envNew)
-            envNew = einsum('bpa,pbdA->Ada',mpsLoc,envNew)
+            envNew = einsum('Ala,APB->alPB',envLoc,conj(mpslLoc))
+            envNew = einsum('lPpr,alPB->aprB',mpoList[op][site],envNew)
+            envNew = einsum('apb,aprB->Brb',mpsLoc,envNew)
 
         # Save resulting new environment
         env_save_ten(envNew,envList,op,site+1)

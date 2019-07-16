@@ -22,6 +22,38 @@ from numpy import real as npreal
 from numpy import array as nparray
 from numpy import eye as npeye
 from numpy import zeros as npzeros
+import copy
+
+def vec_ovlp(vec1,vec2):
+    """
+    Calculate overlap between two vectors
+    """
+    ovlp = summ(abss(dot(vec1,conj(vec2))))
+    return ovlp
+
+def ten_ovlp(ten1,ten2):
+    """
+    Calculate overlap between two vectors
+    """
+    return vec_ovlp(ravel(ten1),ravel(ten2))
+
+def calc_ovlp(state1,state2):
+    """
+    Calculate the overlaps between the states in mps1 and mps2
+    """
+    nState1 = len(state1)
+    nState2 = len(state2)
+    ovlps = zeros((nState1,nState2))
+    for i in range(nState1):
+        for j in range(nState2):
+            ovlps[i,j] = ten_ovlp(state1[i],state2[j])
+    # See if any states should be swapped
+    # PH - Implement
+    ovlp = zeros(nState1)
+    for state in range(nState1):
+        ovlp[state] = ovlps[state,state]
+        mpiprint(4,'State {}, 1-Overlap: {}'.format(state,1.-ovlp[state]))
+    return ovlp
 
 def davidson1(mps,mpo,envl,envr):
     """ 
@@ -87,12 +119,13 @@ def davidson1(mps,mpo,envl,envr):
     # Convert vecs back to ctf if needed
     if USE_CTF: vecs = from_nparray(vecs)
 
-    # Check the overlap
-    # PH - Need to implement
-    ovlp = None
-
     # Convert vecs into original mps shape
+    _mps = mps
     mps = vec2mps(vecs,mps)
+
+    # Check the overlap
+    ovlp = calc_ovlp(mps,_mps)
+
     return E,mps,ovlp
 
 def pick_eigs(w,v,nroots,x0):
@@ -279,12 +312,13 @@ def arnoldi1(mps,mpo,envl,envr):
     # Convert vecs back to ctf if needed
     if USE_CTF: vecs = from_nparray(vecs)
 
-    # Check the overlap
-    # PH - Need to implement
-    ovlp = None
-
-    # Convert vecs into original mps shape
+    # convert vecs into original mps shape
+    _mps = mps
     mps = vec2mps(vecs,mps)
+
+    # check the overlap
+    ovlp = calc_ovlp(mps,_mps)
+
     return E,mps,ovlp
 
 
@@ -334,31 +368,36 @@ def exact1(mps,mpo,envl,envr):
     # Convert vecs back to ctf if needed
     if USE_CTF: vecs = from_nparray(vecs)
 
+    # Convert vecs into original mps shape
+    _mps = mps
+    mps = vec2mps(vecs,mps)
+
     # Check the overlap
     # PH - Need to implement
-    ovlp = None
-
-    # Convert vecs into original mps shape
-    mps = vec2mps(vecs,mps)
+    ovlp = calc_ovlp(_mps,mps)
 
     return E,mps,ovlp
 
-def vec2mps(vecs,mps):
+def vec2mps(vecs,mps,make_copy=True):
     """
     Put a vector into an mps
     """
     mpiprint(8,'Putting vector into mps form')
     
+    if make_copy: 
+        new_mps = copy.deepcopy(mps)
+    else:
+        new_mps = mps
     # Determine number of states in mps
-    nStates = len(mps)
+    nStates = len(new_mps)
     if len(vecs.shape) == 1:
         nStatesVec = 1
-        mps[0] = reshape(vecs,mps[0].shape) # PH - Might need some swapping of indices here?
+        new_mps[0] = reshape(vecs,new_mps[0].shape) 
     else:
         (_,nStatesVec) = vecs.shape
         for state in range(nStates):
-            mps[state] = reshape(vecs[:,state],mps[state].shape) # PH - Might need some swapping of indices here?
-    return mps
+            new_mps[state] = reshape(vecs[:,state],new_mps[state].shape) 
+    return new_mps
 
 def calc_ham1(mps,mpo,envl,envr,dtype=None):
     """
