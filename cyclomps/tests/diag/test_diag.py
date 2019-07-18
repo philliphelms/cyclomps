@@ -66,10 +66,6 @@ class test_diag(unittest.TestCase):
         (mps,) = retrieve_tensors(0,mpsList=mpsList)
         (envl,envr) = retrieve_tensors(0,envList=envList)
         (mpo,) = retrieve_tensors(0,mpoList=mpoList)
-        print(mps[0].shape)
-        print(mpo[0])
-        print(envl[0].shape)
-        print(envr[0].shape)
         # Send to diagonalization routine
         E,mps0,ovlp = eig1(mps,mpo,envl,envr,alg='exact')
         mpiprint(0,'Exact Worked')
@@ -81,3 +77,5 @@ class test_diag(unittest.TestCase):
 
     #def test_two_site(self):
     #    self.assertTrue(False)
+if __name__ == "__main__":
+    unittest.main()

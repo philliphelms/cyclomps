@@ -26,10 +26,13 @@ ones       = ctf.ones
 rand       = ctf.random.random
 def rand(shape,p=None,dtype=None):
     if dtype == complex128 or dtype == complex64:
-        ten_real = ctf.zeros(shape,dtype=float_)
-        ten_real.fill_random()
+        ten_real1 = ctf.zeros(shape,dtype=float_)
+        ten_real1.fill_random()
+        ten_real2 = ctf.zeros(shape,dtype=float_)
+        ten_real2.fill_random()
         ten = ctf.zeros(shape,dtype=complex_)
-        ten += ten_real
+        ten += ten_real1
+        ten += 1.j*ten_real2
     else:
         ten = ctf.zeros(shape,dtype=dtype,sp=False)
         ten.fill_random()
@@ -70,10 +73,10 @@ def expand_dims(ten,ax):
 def save_ten(ten,fname):
     ten.write_to_file(fname)
 def load_ten(dim,fname,dtype=None,):
-    ten_real = ctf.zeros(dim,dtype=float_)
-    ten_real.fill_random()
+    #ten_real = ctf.zeros(dim,dtype=float_)
+    #ten_real.fill_random()
     ten = ctf.zeros(dim,dtype=dtype)
-    ten = ten_real + 0.j
+    #ten = ten_real + 0.j
     ten.read_from_file(fname)
     return ten
 # Overwrite functions that are different for sparse tensors

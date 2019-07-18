@@ -427,8 +427,10 @@ def svd_ten(ten,split_ind,mbd=None,return_ent=True,return_wgt=True):
     V = V[:D,:]
 
     # Reshape to match correct tensor format
-    U = U.reshape(ten_shape[:split_ind]+(-1,))
-    V = V.reshape((-1,)+ten_shape[split_ind:])
+    new_dims = ten_shape[:split_ind]+(prod(U.shape)/prod(ten_shape[:split_ind]),)
+    U = U.reshape(new_dims)
+    new_dims = (prod(V.shape)/prod(ten_shape[split_ind:]),)+ten_shape[split_ind:]
+    V = V.reshape(new_dims)
 
     # Print some results
     mpiprint(4,'Entanglement Entropy = {}'.format(EE))

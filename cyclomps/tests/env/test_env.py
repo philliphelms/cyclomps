@@ -44,21 +44,26 @@ class test_env(unittest.TestCase):
         from cyclomps.mpo.tasep import return_mpo
         mpo = return_mpo(N,(0.5,0.5,1.))
         # Create a function to compute energy 
-        def calc_energy(mpsL,mpo):
-            mps = load_mps_list(mpsL)
+        def calc_energy(mps,mpo,load_mps=True):
+            if load_mps:
+                mps = load_mps_list(mps)
             E = zeros(nState,dtype=mps[0][0].dtype)
             for state in range(nState):
-                E[state] = einsum('apb,bqc,crd,dse,iPpj,jQqk,kRrl,lSsm,APB,BQC,CRD,DSE->',
-                                     mps[state][0],mps[state][1],mps[state][2],mps[state][3],
-                                     mpo[0][0],mpo[0][1],mpo[0][2],mpo[0][3],
-                                     conj(mps[state][0]),conj(mps[state][1]),conj(mps[state][2]),conj(mps[state][3]))
-                E[state] /= calc_mps_norm(mpsL,state=state)
+                psi = einsum('apb,bqc,crd,dse->pqrs',mps[state][0],mps[state][1],mps[state][2],mps[state][3])
+                op = einsum('iPpj,jQqk,kRrl,lSsm->PpQqRrSs',mpo[0][0],mpo[0][1],mpo[0][2],mpo[0][3])
+                psi_conj = einsum('apb,bqc,crd,dse->pqrs',conj(mps[state][0]),conj(mps[state][1]),conj(mps[state][2]),conj(mps[state][3]))
+                E[state] = einsum('pqrs,PpQqRrSs,PQRS',psi,op,psi_conj)
+                norm = einsum('pqrs,pqrs->',psi,psi_conj)
+                E[state] /= norm
             return E
         # Compute energy
         E1 = calc_energy(mpsList,mpo)
+        mpiprint(0,'Initial Energy =\n{}'.format(E1))
         # Right Canonicalize
         mpsList = make_mps_list_right(mpsList)
+        # Compute energy again
         E2 = calc_energy(mpsList,mpo)
+        mpiprint(0,'Energy after canonicalization =\n{}'.format(E2))
         # Calculate the environment
         from cyclomps.tools.env_tools import calc_env,env_load_ten,load_env_list
         envList = calc_env(mpsList,mpo)
@@ -69,12 +74,13 @@ class test_env(unittest.TestCase):
         for state in range(nState):
             E3[state] = einsum('Ala,apb,lPpr,APB,Brb->',env[0][0],mps[0][0],mpo[0][0],conj(mps[0][0]),env[0][1])
             E3[state] /= calc_mps_norm(mpsList,state=state)
+        mpiprint(0,'Energy from environment =\n{}'.format(E3))
         # Check Results
-        self.assertTrue(abss(E1[0]-E2[0]) < 1e-10)
-        self.assertTrue(abss(E1[0]-E3[0]) < 1e-10)
+        self.assertTrue(summ(abss(E1[0]-E2[0])) < 1e-10)
+        self.assertTrue(summ(abss(E1[0]-E3[0])) < 1e-10)
         mpiprint(0,'Passed\n'+'='*50)
 
-    def test_tasep_mpo(self):
+    def test_tasep_mpo2(self):
         mpiprint(0,'\n'+'='*50+'\nTesting Initial & Moved Environments Using TASEP MPO\n'+'-'*50)
         # Create an MPS
         from cyclomps.tools.mps_tools import create_mps_list,make_mps_list_right,load_mps_list,calc_mps_norm,move_gauge
@@ -87,15 +93,17 @@ class test_env(unittest.TestCase):
         from cyclomps.mpo.tasep import return_mpo
         mpo = return_mpo(N,(0.5,0.5,1.))
         # Create a function to compute energy 
-        def calc_energy(mpsL,mpo):
-            mps = load_mps_list(mpsL)
+        def calc_energy(mps,mpo,load_mps=True):
+            if load_mps:
+                mps = load_mps_list(mps)
             E = zeros(nState,dtype=mps[0][0].dtype)
             for state in range(nState):
-                E[state] = einsum('apb,bqc,crd,dse,iPpj,jQqk,kRrl,lSsm,APB,BQC,CRD,DSE->',
-                                     mps[state][0],mps[state][1],mps[state][2],mps[state][3],
-                                     mpo[0][0],mpo[0][1],mpo[0][2],mpo[0][3],
-                                     conj(mps[state][0]),conj(mps[state][1]),conj(mps[state][2]),conj(mps[state][3]))
-                E[state] /= calc_mps_norm(mpsL,state=state)
+                psi = einsum('apb,bqc,crd,dse->pqrs',mps[state][0],mps[state][1],mps[state][2],mps[state][3])
+                op = einsum('iPpj,jQqk,kRrl,lSsm->PpQqRrSs',mpo[0][0],mpo[0][1],mpo[0][2],mpo[0][3])
+                psi_conj = einsum('apb,bqc,crd,dse->pqrs',conj(mps[state][0]),conj(mps[state][1]),conj(mps[state][2]),conj(mps[state][3]))
+                E[state] = einsum('pqrs,PpQqRrSs,PQRS',psi,op,psi_conj)
+                norm = einsum('pqrs,pqrs->',psi,psi_conj)
+                E[state] /= norm
             return E
         # Compute energy
         E1 = calc_energy(mpsList,mpo)

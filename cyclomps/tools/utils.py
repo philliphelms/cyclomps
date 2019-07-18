@@ -31,7 +31,11 @@ def mpiprint(priority,msg):
     avoiding repeated printing of statements.
     """
     if (RANK == 0) and (priority <= VERBOSE):
-        print('  '*priority+msg)
+        try:
+            print('  '*priority+msg)
+        except:
+            print(msg)
+
 
 def timeprint(priority,msg):
     """ 

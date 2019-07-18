@@ -221,6 +221,7 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
         # Make sure vecs are orthonormal
         vecs = sla.orth(vecs)
         vecs = vecs.T
+        #vecs = conj(vecs)
 
         # Put results into mps0 and mps1
         if USE_CTF: vecs = from_nparray(vecs)
@@ -237,6 +238,7 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
 
         # Multiply into next site to transfer gauge
         mps0[state] = einsum('apb,bqc,Bqc->apB',mps0[state],mps1[state],conj(mps1_new))
+        #mps0[state] = conj(einsum('apb,bqc,Bqc->apB',conj(mps0[state]),conj(mps1[state]),mps1_new))
 
         # Write over mps0
         mps1[state] = copy.deepcopy(mps1_new)

@@ -25,7 +25,7 @@ USE_CTF = True
 USE_SPARSE = False
 
 # Printing Global Variables
-VERBOSE = 4
+VERBOSE = 3
 VERBOSE_TIME = 0
 VERBOSE_MEM = 0
 OUTPUT_DIGITS = 5

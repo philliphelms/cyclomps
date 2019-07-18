@@ -17,3 +17,6 @@ CTF and, if using the davidson diagonalization routine, pyscf.
 * Add more memory and time printing
 * Implement U(1) and SU(2) symmetries
 * Periodic BCs, (without simple cheat)
+
+## Known Bugs
+* Must run test_algs.py and test_renorm.py separately
