@@ -13,7 +13,8 @@ from cyclomps.tools.utils import *
 from cyclomps.tools.params import *
 from cyclomps.tools.mps_tools import mps_load_ten
 from cyclomps.tools.env_tools import env_load_ten
-from pyscf.lib import eig as davidson
+#from pyscf.lib import eig as davidson
+from cyclomps.tools.la_tools import eig as davidson
 from scipy.sparse.linalg import eigs as arnoldi
 from scipy.sparse.linalg import LinearOperator
 from numpy import complex_

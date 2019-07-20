@@ -4,6 +4,8 @@ from mpi4py import MPI
 # MPI Global Variables
 COMM = MPI.COMM_WORLD
 RANK = COMM.Get_rank()
+SIZE = COMM.size
+print('Rank = {}'.format(RANK))
 
 # Temporary directories for calculation
 TMPDIR = os.environ.get('TMPDIR','.')
@@ -16,9 +18,17 @@ if RANK == 0:
     while not created:
         CALCDIR = TMPDIR+'/cyclomps_calc'+str(ind)
         if not os.path.exists(CALCDIR):
-            os.mkdir(CALCDIR)
-            created = True
+            try:
+                os.mkdir(CALCDIR)
+                created = True
+            except:
+                pass
         ind += 1
+    for ind in range(1,SIZE):
+        COMM.send({'dir': CALCDIR}, dest=ind)
+else:
+    dic = COMM.recv(source=0)
+    CALCDIR = dic['dir']
 
 # Use ctf or numpy
 USE_CTF = True
@@ -26,8 +36,8 @@ USE_SPARSE = False
 
 # Printing Global Variables
 VERBOSE = 3
-VERBOSE_TIME = 0
-VERBOSE_MEM = 0
+VERBOSE_TIME = 3
+VERBOSE_MEM = 3
 OUTPUT_DIGITS = 5
 OUTPUT_COLS = 5
 

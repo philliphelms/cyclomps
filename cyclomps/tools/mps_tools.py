@@ -14,7 +14,6 @@ Date: June 2019
 
 from cyclomps.tools.utils import *
 from cyclomps.tools.params import *
-from shutil import copyfile
 import re
 import os
 from numpy import float_,complex_,int
@@ -62,7 +61,7 @@ def create_mps_list(d,mbd,nStates,
     created = False
     while not created:
         if not os.path.exists(CALCDIR+subdir+str(subdir_ind)):
-            os.mkdir(CALCDIR+subdir+str(subdir_ind))
+            mkdir(CALCDIR+subdir+str(subdir_ind))
             subdir = subdir + str(subdir_ind)
             created = True
         subdir_ind += 1
@@ -1045,7 +1044,7 @@ def mps_copy(mpsList,subdir='mps'):
     created = False
     while not created:
         if not os.path.exists(CALCDIR+subdir+str(subdir_ind)):
-            os.mkdir(CALCDIR+subdir+str(subdir_ind))
+            mkdir(CALCDIR+subdir+str(subdir_ind))
             subdir = subdir + str(subdir_ind)
             created = True
         subdir_ind += 1
@@ -1062,10 +1061,7 @@ def mps_copy(mpsList,subdir='mps'):
             new_fname = CALCDIR + subdir + '/state'+str(state)+'_site'+str(site)
         
             # Copy Old file
-            try:    
-                copyfile(old_fname,new_fname)
-            except:
-                copyfile(old_fname+'.npy',new_fname+'.npy')
+            copyfile(old_fname,new_fname)
 
             # Update new MPS
             dims = mpsList[state][site]['dims']

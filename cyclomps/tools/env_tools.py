@@ -37,7 +37,7 @@ def alloc_env(mpsL,mpoL,dtype=None,subdir='env'):
     created = False
     while not created:
         if not os.path.exists(CALCDIR+subdir+str(subdir_ind)):
-            os.mkdir(CALCDIR+subdir+str(subdir_ind))
+            mkdir(CALCDIR+subdir+str(subdir_ind))
             subdir = subdir + str(subdir_ind)
             created = True
         subdir_ind += 1
