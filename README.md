@@ -15,6 +15,6 @@ CTF.
 * Implement U(1) and SU(2) symmetries
 
 ## Known Bugs
-* Must run test_algs.py and test_renorm.py separately
-* There is an apparent memory leak.
-* When using a large number of processors, there is some sort of memory corruption that occurs, setting all tensor elements to zero. 
+* Must run test_algs.py and test_renorm.py separately when using CTF
+* Problems using eigh in state averaged renormalization - temporarily fixed by doing svd on the rdm
+* CTF seems to have trouble using '-1' as an index - need to make sure we are avoiding this.

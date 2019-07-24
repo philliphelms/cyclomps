@@ -214,6 +214,7 @@ def mps_save_ten(ten,mpsList,state,site):
     """
     # Get Useful info from mpsList
     fname = mpsList[state][site]['fname']
+    mpiprint(8,'Saving mps tensor at {}'.format(fname))
 
     # Load Tensor
     save_ten(ten,fname)
@@ -329,8 +330,8 @@ def calc_entanglement(S):
     EE = summ(EEspec)
 
     # Print Results
-    mpiprint(8,'Entanglement Entropy = {}'.format(EE))
-    mpiprint(9,'Entanglement Spectrum = {}'.format(EEspec))
+    #mpiprint(8,'Entanglement Entropy = {}'.format(EE))
+    #mpiprint(9,'Entanglement Spectrum = {}'.format(EEspec))
 
     # Return Results
     return EE,EEspec
@@ -400,14 +401,18 @@ def svd_ten(ten,split_ind,mbd=None,return_ent=True,return_wgt=True):
             The sum of the discarded weigths
             Only returned if return_wgt == True
     """
+    mpiprint(8,'Performing svd on tensors')
     # Reshape tensor into matrix
     ten_shape = ten.shape
+    mpiprint(9,'First, reshape the tensor into a matrix')
     ten = ten.reshape([prod(ten_shape[:split_ind]),prod(ten_shape[split_ind:])])
 
     # Perform svd
+    mpiprint(9,'Perform actual svd')
     U,S,V = svd(ten)
 
     # Compute Entanglement
+    mpiprint(9,'Calculate the entanglment')
     EE,EEs = calc_entanglement(S)
 
     # Truncate results (if necessary)
@@ -421,19 +426,21 @@ def svd_ten(ten,split_ind,mbd=None,return_ent=True,return_wgt=True):
     wgt = S[D:].sum()
 
     # Truncate U,S,V
+    mpiprint(9,'Limit tensor dimensions')
     U = U[:,:D]
     S = S[:D]
     V = V[:D,:]
 
     # Reshape to match correct tensor format
+    mpiprint(9,'Reshape to match original tensor dimensions')
     new_dims = ten_shape[:split_ind]+(prod(U.shape)/prod(ten_shape[:split_ind]),)
     U = U.reshape(new_dims)
     new_dims = (prod(V.shape)/prod(ten_shape[split_ind:]),)+ten_shape[split_ind:]
     V = V.reshape(new_dims)
 
     # Print some results
-    mpiprint(4,'Entanglement Entropy = {}'.format(EE))
-    mpiprint(7,'EE Spectrum = ')
+    #mpiprint(4,'Entanglement Entropy = {}'.format(EE))
+    #mpiprint(7,'EE Spectrum = ')
     nEEs = EEs.shape[0]
     for i in range(nEEs):
         mpiprint(7,'   {}'.format(EEs[i]))
@@ -484,6 +491,7 @@ def move_gauge_right_tens(ten1,ten2,return_ent=True,return_wgt=True):
             The sum of the discarded weigths
             Only returned if return_wgt == True
     """
+    mpiprint(7,'Moving loaded tensors gauge right')
     (n1,n2,n3) = ten1.shape
     (n4,n5,n6) = ten2.shape
 
@@ -491,6 +499,7 @@ def move_gauge_right_tens(ten1,ten2,return_ent=True,return_wgt=True):
     U,S,V,EE,EEs,wgt = svd_ten(ten1,2,mbd=None)
 
     # Pad result to keep bond dim fixed
+    mpiprint(9,'Padding tensors from svd')
     Upad = zeros((n1,n2,n3),dtype=type(U[0,0,0]))
     Upad[:,:,:min(n1*n2,n3)] = U
     Spad = zeros((n3),dtype=type(S[0]))
@@ -500,6 +509,7 @@ def move_gauge_right_tens(ten1,ten2,return_ent=True,return_wgt=True):
     ten1 = Upad
 
     # Multiply remainder into neighboring site
+    mpiprint(9,'Actually moving the gauge')
     gauge = einsum('a,ab->ab',Spad,Vpad)
     ten2 = einsum('ab,bpc->apc',gauge,ten2)
 

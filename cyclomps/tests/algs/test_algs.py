@@ -46,6 +46,7 @@ class test_algs(unittest.TestCase):
                   left=False)
         mpiprint(0,'Passed\n'+'='*20)
         
+    """
     def test_dmrg3(self):
         mpiprint(0,'\n'+'='*20+'\nTesting one-site dmrg\n'+\
                  '-Arnoldi\n-Fixed BD\n-orthonormalized\n-noise added\n-Multiple BD\n'+'='*20)
@@ -65,6 +66,7 @@ class test_algs(unittest.TestCase):
                   orthonormalize=True,
                   noise=True)
         mpiprint(0,'Passed\n'+'='*20)
+    """
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,11 +33,19 @@ def mpiprint(priority,msg):
     Make print only work when RANK == 0, 
     avoiding repeated printing of statements.
     """
+    if (RANK == 0) and (priority <= VERBOSE_MEM):
+        tot_mem = bytes2human(vmem()[0])
+        av_mem = bytes2human(vmem()[3])
+        try:
+            msg += ': '+av_mem+' / '+tot_mem
+        except:
+            pass
     if (RANK == 0) and (priority <= VERBOSE):
         try:
             print('  '*priority+msg)
         except:
             print(msg)
+
 
 
 def timeprint(priority,msg):

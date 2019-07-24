@@ -31,18 +31,18 @@ else:
     CALCDIR = dic['dir']
 
 # Use ctf or numpy
-USE_CTF = True
+USE_CTF = False
 USE_SPARSE = False
 
 # Printing Global Variables
 VERBOSE = 3
 VERBOSE_TIME = 3
-VERBOSE_MEM = 3
+VERBOSE_MEM = 2
 OUTPUT_DIGITS = 5
 OUTPUT_COLS = 5
 
 # Eigenproblem parameters
-DAVIDSON_TOL = 1e-10
+DAVIDSON_TOL = 1e-16
 DAVIDSON_MAX_ITER = 100
 USE_PRECOND = False
 ARNOLDI_TOL = 1e-8

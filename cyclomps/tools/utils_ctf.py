@@ -47,12 +47,25 @@ einsum     = ctf.einsum
 qr         = ctf.qr
 summ       = ctf.sum
 svd        = ctf.svd
+eigh       = ctf.eigh
+#def dot(a,b):
+#    res = ctf.dot(a,b)
+#    if (prod(res.shape) == 1) or (len(res.shape) == 0):
+#        return summ(res)
+#    else:
+#        return res
 def log2(a):
     return ctf.from_nparray(nplog2(ctf.to_nparray(a)))
 def prod(a):
     return npprod(ctf.to_nparray(a))
 def sqrt(a):
-    return ctf.from_nparray(npsqrt(ctf.to_nparray(a)))
+    if hasattr(a,'shape'):
+        if (prod(a.shape) == 1) or (len(a.shape) == 0):
+            return npsqrt(ctf.to_nparray(a))
+        else:
+            return ctf.from_nparray(npsqrt(ctf.to_nparray(a)))
+    else:
+        return npsqrt(a)
 
 # Tensor Manipulation
 conj       = ctf.conj
@@ -64,7 +77,11 @@ real       = ctf.real
 reshape    = ctf.reshape
 transpose  = ctf.transpose
 to_nparray = ctf.to_nparray
-from_nparray=ctf.from_nparray
+#from_nparray=ctf.from_nparray
+from_nparray=ctf.astensor
+take       = ctf.take
+import inspect
+print(inspect.getmodule(take).__file__)
 def expand_dims(ten,ax):
     ten = ctf.to_nparray(ten)
     ten = npexpand_dims(ten,ax)
@@ -73,12 +90,11 @@ def expand_dims(ten,ax):
 def save_ten(ten,fname):
     ten.write_to_file(fname)
 def load_ten(dim,fname,dtype=None,):
-    #ten_real = ctf.zeros(dim,dtype=float_)
-    #ten_real.fill_random()
     ten = ctf.zeros(dim,dtype=dtype)
-    #ten = ten_real + 0.j
     ten.read_from_file(fname)
     return ten
+def argsort(seq):
+    return sorted(range(seq.shape[0]), key=seq.__getitem__)
 # Overwrite functions that are different for sparse tensors
 if USE_SPARSE:
     diag = ctf.spdiag
@@ -97,8 +113,5 @@ if USE_SPARSE:
         return ctf.zeros(shape,dtype=dtype,sp=True)
     def load_ten(dim,fname,dtype=None,sp=True):
         ten = zeros(dim,dtype=dtype,sp=sp)
-        print('Loading Tensor')
-        ctf.svd(ten)
-        print('Loaded Tensor\n')
         ten.read_from_file(fname)
         return ten

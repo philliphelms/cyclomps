@@ -95,10 +95,7 @@ def davidson1(mps,mpo,envl,envr):
     # Determine initial guess
     guess = []
     for state in range(nStates):
-        if USE_CTF: 
-            guess.append(to_nparray(ravel(mps[state])))
-        else:
-            guess.append(ravel(mps[state]))
+        guess.append(ravel(mps[state]))
 
     # Send to davidson algorithm
     E,vecso = davidson(hop,guess,precond,
@@ -106,19 +103,15 @@ def davidson1(mps,mpo,envl,envr):
                          follow_state=False,tol=DAVIDSON_TOL,
                          max_cycle=DAVIDSON_MAX_ITER)
     E = -E 
-    # Sort results
-    inds = npargsort(npreal(E))[::-1]
     # davidson occasionally does not return enough states
-    if hasattr(E,'__len__'):
-        E = E[inds[:nStates]]
-        vecs = npzeros((len(vecso[0]),nStates),dtype=type(vecso[0][0]))
+    try:
+        inds = argsort(real(E))[::-1]
+        E = take(E,inds[:nStates])
+        vecs = zeros((vecso[0].shape[0],nStates),dtype=type(vecso[0][0]))
         for vec_ind in range(min(nStates,len(inds))):
             vecs[:,vec_ind] = vecso[inds[vec_ind]]
-    else:
+    except:
         vecs = vecso
-
-    # Convert vecs back to ctf if needed
-    if USE_CTF: vecs = from_nparray(vecs)
 
     # Convert vecs into original mps shape
     _mps = mps
@@ -134,9 +127,9 @@ def pick_eigs(w,v,nroots,x0):
     Used in Davidson function to pick eigenvalues
     """
     mpiprint(10,'Picking Eigs in davidson or arnoldi')
-    idx = npargsort(npreal(w))
-    w = w[idx]
-    v = v[:,idx]
+    idx = argsort(real(w))
+    w = take(w,idx)
+    v = take(v,idx,axis=1)
     return w,v,idx
 
 def make_ham_func1(mps,mpo,envl,envr):
@@ -168,10 +161,8 @@ def make_ham_func1(mps,mpo,envl,envr):
 
     # Create hamiltonian function
     def hop(x):
-        memprint(9,'Inside hop function')
         mpiprint(9,'Inside hop function')
         # Process input
-        if USE_CTF: x = from_nparray(x)
         x = reshape(x,mps[0].shape)
         res = zeros_like(x,dtype=complex_)
         # Loop over all operators
@@ -184,13 +175,11 @@ def make_ham_func1(mps,mpo,envl,envr):
                 tmp = einsum('dqpc,Bcap->dqBa',mpo[op],tmp)
                 res +=einsum('Ada,dqBa->AqB',envl[op],tmp)
         res = ravel(res)
-        if USE_CTF: res = to_nparray(res)
         return -res
 
     # Create Preconditioner Function
     if USE_PRECOND:
         diag = ravel(calc_diag1(mpo,envl,envr))
-        if USE_CTF: diag = to_nparray(diag)
         def precond(dx,e,x0):
             return dx/(diag-e)
     else:
@@ -273,6 +262,9 @@ def arnoldi1(mps,mpo,envl,envr):
         ovlp : float
             the overlap between the input guess and output state
     """
+    print('ARNOLDI NOT WORKING')
+    import sys
+    sys.exit()
     mpiprint(6,'Doing Arnoldi optimization routine')
 
     # Compute the number of states

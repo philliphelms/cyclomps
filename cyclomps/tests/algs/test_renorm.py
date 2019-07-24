@@ -45,6 +45,11 @@ class test_algs(unittest.TestCase):
         self.assertTrue(summ(abss(E1[1]-E2[1])) < 1e-10)
         self.assertTrue(summ(abss(E1[2]-E2[2])) < 1e-10)
         self.assertTrue(summ(abss(E1[3]-E2[3])) < 1e-10)
+        # Check for correct canonical form
+        for state in range(nState):
+            eye_check = einsum('apb,apc->bc',mps0[state],conj(mps0[state]))
+            eye_actual= eye(eye_check.shape[0])
+            self.assertTrue(summ(abss(eye_check-eye_actual)) < 1e-10)
         mpiprint(0,'Passed\n'+'='*50)
         
     def test_renorm_right2(self):
@@ -88,6 +93,11 @@ class test_algs(unittest.TestCase):
         self.assertTrue(summ(abss(E1[1]-E2[1])) < 1e-10)
         self.assertTrue(summ(abss(E1[2]-E2[2])) < 1e-10)
         self.assertTrue(summ(abss(E1[3]-E2[3])) < 1e-10)
+        # Check for correct canonical form
+        for state in range(nState):
+            eye_check = einsum('apb,apc->bc',mps0[state],conj(mps0[state]))
+            eye_actual= eye(eye_check.shape[0])
+            self.assertTrue(summ(abss(eye_check-eye_actual)) < 1e-10)
         mpiprint(0,'Passed\n'+'='*50)
 
     def test_renorm_left_norm(self):
@@ -132,6 +142,11 @@ class test_algs(unittest.TestCase):
         self.assertTrue(summ(abss(norm1[1]-norm2[1])) < 1e-10)
         self.assertTrue(summ(abss(norm1[2]-norm2[2])) < 1e-10)
         self.assertTrue(summ(abss(norm1[3]-norm2[3])) < 1e-10)
+        # Check for correct canonical form
+        for state in range(nState):
+            eye_check = einsum('apb,cpb->ac',mps1[state],conj(mps1[state]))
+            eye_actual= eye(eye_check.shape[0])
+            self.assertTrue(summ(abss(eye_check-eye_actual)) < 1e-10)
         mpiprint(0,'Passed\n'+'='*50)
 
     def test_renorm_left_energy(self):
@@ -172,12 +187,15 @@ class test_algs(unittest.TestCase):
         # Calc Energy Again
         E2,norm2 = calc_energy(mps,mpo)
         # Check Energies
-        mpiprint(0,E1)
-        mpiprint(0,E2)
         self.assertTrue(summ(abss(E1[0]-E2[0])) < 1e-10)
         self.assertTrue(summ(abss(E1[1]-E2[1])) < 1e-10)
         self.assertTrue(summ(abss(E1[2]-E2[2])) < 1e-10)
         self.assertTrue(summ(abss(E1[3]-E2[3])) < 1e-10)
+        # Check for correct canonical form
+        for state in range(nState):
+            eye_check = einsum('apb,cpb->ac',mps1[state],conj(mps1[state]))
+            eye_actual= eye(eye_check.shape[0])
+            self.assertTrue(summ(abss(eye_check-eye_actual)) < 1e-10)
         mpiprint(0,'Passed\n'+'='*50)
 
     def test_renorm_avg_left_norm(self):
@@ -222,6 +240,11 @@ class test_algs(unittest.TestCase):
         self.assertTrue(summ(abss(norm1[1]-norm2[1])) < 1e-10)
         self.assertTrue(summ(abss(norm1[2]-norm2[2])) < 1e-10)
         self.assertTrue(summ(abss(norm1[3]-norm2[3])) < 1e-10)
+        # Check for correct canonical form
+        for state in range(nState):
+            eye_check = einsum('apb,cpb->ac',mps1[state],conj(mps1[state]))
+            eye_actual= eye(eye_check.shape[0])
+            self.assertTrue(summ(abss(eye_check-eye_actual)) < 1e-10)
         mpiprint(0,'Passed\n'+'='*50)
 
     def test_renorm_avg_left_energy(self):
@@ -262,12 +285,15 @@ class test_algs(unittest.TestCase):
         # Calc Energy Again
         E2,norm2 = calc_energy(mps,mpo)
         # Check Energies
-        mpiprint(0,E1)
-        mpiprint(0,E2)
         self.assertTrue(summ(abss(E1[0]-E2[0])) < 1e-10)
         self.assertTrue(summ(abss(E1[1]-E2[1])) < 1e-10)
         self.assertTrue(summ(abss(E1[2]-E2[2])) < 1e-10)
         self.assertTrue(summ(abss(E1[3]-E2[3])) < 1e-10)
+        # Check for correct canonical form
+        for state in range(nState):
+            eye_check = einsum('apb,cpb->ac',mps1[state],conj(mps1[state]))
+            eye_actual= eye(eye_check.shape[0])
+            self.assertTrue(summ(abss(eye_check-eye_actual)) < 1e-10)
         mpiprint(0,'Passed\n'+'='*50)
 
     def test_renorm_avg_left_energy2(self):
@@ -331,6 +357,11 @@ class test_algs(unittest.TestCase):
         self.assertTrue(summ(abss(E1[1]-E2[1])) < 1e-10)
         self.assertTrue(summ(abss(E1[2]-E2[2])) < 1e-10)
         self.assertTrue(summ(abss(E1[3]-E2[3])) < 1e-10)
+        # Check for correct canonical form
+        for state in range(nState):
+            eye_check = einsum('apb,cpb->ac',mps1[state],conj(mps1[state]))
+            eye_actual= eye(eye_check.shape[0])
+            self.assertTrue(summ(abss(eye_check-eye_actual)) < 1e-10)
         mpiprint(0,'Passed\n'+'='*50)
 
 

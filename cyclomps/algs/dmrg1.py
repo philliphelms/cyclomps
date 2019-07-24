@@ -9,6 +9,7 @@ from cyclomps.tools.mpo_tools import *
 from cyclomps.tools.mps_tools import *
 from cyclomps.tools.env_tools import *
 from cyclomps.tools.diag_tools import *
+from cyclomps.tools.la_tools import *
 from cyclomps.tools.utils import *
 from cyclomps.tools.params import *
 import scipy.linalg as sla
@@ -84,7 +85,6 @@ def renormalize_right(mps0,mps1,state_avg=True,target_state=0):
 
     """
     mpiprint(5, 'Renormalize right Step')
-    memprint(5, '  Start Renormalize Memory')
 
     # Determine info from mps0
     nStates = len(mps0)
@@ -94,11 +94,11 @@ def renormalize_right(mps0,mps1,state_avg=True,target_state=0):
     EE = [None]*nStates
     EEs= [None]*nStates
     wgt= [None]*nStates
-    #for state in range(nStates):
-    #    _,_,EE_,EEs_,wgt_ = move_gauge_right_tens(mps0[state],mps1[state])
-    #    EE[state] = EE_
-    #    EEs[state] = EEs_
-    #    wgt[state] = wgt
+    for state in range(nStates):
+        _,_,EE_,EEs_,wgt_ = move_gauge_right_tens(mps0[state],mps1[state])
+        EE[state] = EE_
+        EEs[state] = EEs_
+        wgt[state] = wgt
 
     if state_avg:
         # Compute rdm
@@ -109,23 +109,21 @@ def renormalize_right(mps0,mps1,state_avg=True,target_state=0):
             else:
                 rdm+= w*calc_rdm(mps0[state],'right')
 
-        # Take eigenvalues of the rdm
-        if USE_CTF: rdm = to_nparray(rdm)
-        vals,vecs = sla.eig(rdm)
+        # take eigenvalues of the rdm (use svd because of bugs with ctf.eigh)
+        (vecs,vals,_) = svd(rdm)
+        vals = sqrt(vals)
+        vecs = einsum('ij,jk->ik',vecs,diag(vals))
 
         # Sort results
-        inds = npargsort(vals)[::-1]
+        inds = argsort(vals)[::-1]
 
         # Retain mbd eigenstates
         inds = inds[:n3]
-        vals = vals[inds]
-        vecs = vecs[:,inds]
+        vals = take(vals,inds)
+        vecs = take(vecs,inds,axis=1)
 
         # Make sure vecs are orthonormal
-        vecs = sla.orth(vecs)
-
-        # Put results into mps0 and mps1
-        if USE_CTF: vecs = from_nparray(vecs)
+        vecs = orth(vecs)
 
         # Store new mps tensor
         mps0_new = zeros((n1,n2,n3),dtype=type(vecs[0,0]))
@@ -181,7 +179,6 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
 
     """
     mpiprint(5, 'Renormalize left Step')
-    memprint(5, '  Start Renormalize Memory')
 
     # Determine info from mps0
     nStates = len(mps1)
@@ -191,11 +188,11 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
     EE = [None]*nStates
     EEs = [None]*nStates
     wgt = [None]*nStates
-    #for state in range(nStates):
-    #    mps0[state],mps1[state],EE_,EEs_,wgt_ = move_gauge_left_tens(mps0[state],mps1[state])
-    #    EE[state] = EE_
-    #    EEs[state] = EEs_
-    #    wgt[state] = wgt
+    for state in range(nStates):
+        mps0[state],mps1[state],EE_,EEs_,wgt_ = move_gauge_left_tens(mps0[state],mps1[state])
+        EE[state] = EE_
+        EEs[state] = EEs_
+        wgt[state] = wgt
 
     if state_avg:
         # Compute rdm
@@ -206,25 +203,22 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
             else:
                 rdm+= w*calc_rdm(mps1[state],'left')
 
-        # Take eigenvalues of the rdm
-        if USE_CTF: rdm = to_nparray(rdm)
-        vals,vecs = sla.eig(rdm)
+        # take eigenvalues of the rdm (use svd because of bugs with ctf.eigh)
+        (vecs,vals,_) = svd(rdm)
+        vals = sqrt(vals)
+        vecs = einsum('ij,jk->ik',vecs,diag(vals))
 
         # Sort results
-        inds = npargsort(vals)[::-1]
+        inds = argsort(vals)[::-1]
 
         # Retain mbd eigenstates
         inds = inds[:n1]
-        vals = vals[inds]
-        vecs = vecs[:,inds]
+        vals = take(vals,inds)
+        vecs = take(vecs,inds,axis=1)
 
         # Make sure vecs are orthonormal
-        vecs = sla.orth(vecs)
-        vecs = vecs.T
-        #vecs = conj(vecs)
-
-        # Put results into mps0 and mps1
-        if USE_CTF: vecs = from_nparray(vecs)
+        vecs = orth(vecs)
+        vecs = transpose(vecs)
 
         # Put resulting eigenvectors into mps1
         mps1_new = zeros((n1,n2,n3),dtype=vecs.dtype)
@@ -238,7 +232,6 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
 
         # Multiply into next site to transfer gauge
         mps0[state] = einsum('apb,bqc,Bqc->apB',mps0[state],mps1[state],conj(mps1_new))
-        #mps0[state] = conj(einsum('apb,bqc,Bqc->apB',conj(mps0[state]),conj(mps1[state]),mps1_new))
 
         # Write over mps0
         mps1[state] = copy.deepcopy(mps1_new)
@@ -255,7 +248,6 @@ def right_step(site,mps,mpo,env,
     """
     t0 = time.time()
     mpiprint(6,'Start Right Step')
-    memprint(6,'  Right Step Start Memory')
     
     # Retrieve relevant tensors
     (mps0,) = retrieve_tensors(site,mpsList=mps)
@@ -264,7 +256,7 @@ def right_step(site,mps,mpo,env,
 
     # Solve Eigenproblem
     E,mps0,ovlp = eig1(mps0,mpo,envl,envr,alg=alg)
-    mpiprint(3,'Right Step E = {}'.format(E))
+    mpiprint(3,'Right Step at site {}, E = {}'.format(site,E))
 
     # Perform Renormalization
     (mps1,) = retrieve_tensors(site+1,mpsList=mps)
@@ -281,7 +273,6 @@ def right_step(site,mps,mpo,env,
 
     # Print Total Sweep time
     timeprint(4,'Right Step Time: {} s'.format(time.time()-t0))
-    memprint(6,'  Right Step End Memory')
 
     # Return results
     return E,EE,EEs,wgt
@@ -344,7 +335,6 @@ def left_step(site,mps,mpo,env,
     """
     t0 = time.time()
     mpiprint(6,'Start Left Step')
-    memprint(6,'  Start Left Step Memory') 
     
     # Retrieve relevant tensors
     (mps0,) = retrieve_tensors(site-1,mpsList=mps)
@@ -354,7 +344,7 @@ def left_step(site,mps,mpo,env,
 
     # Solve Eigenproblem
     E,mps1,ovlp = eig1(mps1,mpo,envl,envr,alg=alg)
-    mpiprint(3,'Left Step E = {}'.format(E))
+    mpiprint(3,'Left Step at site {}, E = {}'.format(site,E))
 
     # Perform Renormalization
     mps0,mps1,EE,EEs,wgt = renormalize_left(mps0,mps1,
@@ -370,7 +360,6 @@ def left_step(site,mps,mpo,env,
 
     # Print total sweep time
     timeprint(4,'Left Step Time: {} s'.format(time.time()-t0))
-    memprint(6,'  End Left Step Memory')
 
     # Return results
     return E,EE,EEs,wgt
@@ -381,7 +370,8 @@ def right_sweep(mps,mpo,env,
                 end_site=None,
                 noise=0.,
                 orthonormalize=False,
-                state_avg=True):
+                state_avg=True,
+                niter=0):
     """
     Perform a DMRG sweep from left to right
 
@@ -427,6 +417,8 @@ def right_sweep(mps,mpo,env,
             multiple states when doing the renormalization step.
             !! ONLY STATE AVG IS IMPLEMENTED !!
             Default : True
+        niter : int
+            The number of sweeps that have been performed (only used for printing)
 
     Returns:
         E : 1D Array
@@ -440,9 +432,8 @@ def right_sweep(mps,mpo,env,
     """
     t0 = time.time()
     mpiprint(2,'\n')
-    mpiprint(2,'Beginning Right Sweep')
+    mpiprint(2,'Beginning Right Sweep {}'.format(niter))
     mpiprint(2,'-'*50)
-    memprint(2,'  Start Right Sweep Memory')
     
     # Get info about mps
     nSite = len(mps[0])
@@ -474,7 +465,6 @@ def right_sweep(mps,mpo,env,
 
     # Print total sweep time
     timeprint(3,'Right Sweep Time: {} s'.format(time.time()-t0))
-    memprint(2,'  End Right Sweep Memory')
 
     # Return result
     return E,EE,EEs,wgt
@@ -485,7 +475,8 @@ def left_sweep(mps,mpo,env,
                end_site=None,
                noise=0.,
                orthonormalize=False,
-               state_avg=True):
+               state_avg=True,
+               niter=0):
     """
     Perform a DMRG sweep from right to left
 
@@ -531,6 +522,8 @@ def left_sweep(mps,mpo,env,
             multiple states when doing the renormalization step.
             !! ONLY STATE AVG IS IMPLEMENTED !!
             Default : True
+        niter : int
+            The number of sweeps that have been performed (only used for printing)
 
     Returns:
         E : 1D Array
@@ -544,9 +537,8 @@ def left_sweep(mps,mpo,env,
     """
     t0 = time.time()
     mpiprint(2,'\n')
-    mpiprint(2,'Beginning Left Sweep')
+    mpiprint(2,'Beginning Left Sweep {}'.format(niter))
     mpiprint(2,'-'*50)
-    memprint(2,'  Start Left Sweep Memory')
     
     # Get info about mps
     nSite = len(mps[0])
@@ -578,7 +570,6 @@ def left_sweep(mps,mpo,env,
 
     # Print total sweep time
     timeprint(3,'Left Sweep Time: {} s'.format(time.time()-t0))
-    memprint(2,'  End Left Sweep Memory')
 
     # Return result
     return E,EE,EEs,wgt
@@ -591,7 +582,7 @@ def check_conv(cont,conv,niter,E,Eprev,tol,min_iter,max_iter):
     
     # Check for convergence
     if not hasattr(E,'__len__'): E = nparray([E])
-    if npsum(npabs((E-Eprev)/E)) < (tol*len(E)) and niter >= min_iter:
+    if summ(abss(((E-Eprev)/E)[0])) < (tol*len(E)) and niter >= min_iter:
         conv = True
         cont = False
         mpiprint(1,'='*50)
@@ -688,7 +679,6 @@ def sweeps(mps,mpo,env,
     t0 = time.time()
     mpiprint(1,'\n\n')
     mpiprint(1,'Beginning DMRG Sweeping Algorithm')
-    memprint(1,'  Starting Sweeps Memory')
     mpiprint(1,'='*50)
 
     # Get some useful info
@@ -718,7 +708,8 @@ def sweeps(mps,mpo,env,
                           end_site=nSites-1,
                           noise=noise,
                           orthonormalize=orthonormalize,
-                          state_avg=state_avg)
+                          state_avg=state_avg,
+                          niter=niter)
 
         # Run Left Sweep
         res =  left_sweep(mps,mpo,env,
@@ -727,7 +718,8 @@ def sweeps(mps,mpo,env,
                           end_site=end_site,
                           noise=noise,
                           orthonormalize=orthonormalize,
-                          state_avg=state_avg)
+                          state_avg=state_avg,
+                          niter=niter)
 
         # Check for Convergence
         E = res[0]
@@ -744,7 +736,6 @@ def sweeps(mps,mpo,env,
 
     # Print time for all sweeps
     timeprint(2,'Time for all sweeps: {} s'.format(time.time()-t0))
-    memprint(1,'  Ending Sweeps Memory')
 
     # Return Results
     return res
@@ -899,7 +890,6 @@ def dmrg(mpo,
     t0 = time.time()
     mpiprint(0,'\n\n')
     mpiprint(0,'Starting DMRG one-site calculation')
-    memprint(1,'Initial Available Memory')
     mpiprint(0,'#'*50)
 
     # Check inputs for problems
@@ -1013,7 +1003,6 @@ def dmrg(mpo,
     # ---------------------------------------------------------------------------------
     # Print time for dmrg procedure
     timeprint(1,'Total time: {} s'.format(time.time()-t0))
-    memprint(1,'Final Available Memory')
 
     # Return results
     ret_list = [E]

@@ -27,6 +27,11 @@ def save_ten(ten,fname):
 def load_ten(dim,fname,dtype=None):    
     return np.load(fname+'.npy')
 
+def from_nparray(arr):
+    return arr
+
+def to_nparray(arr):
+    return arr
 
 # -------------------------------------------------
 # Linear Algebra
@@ -38,6 +43,7 @@ summ       = np.sum
 prod       = np.prod
 sqrt       = np.sqrt
 log2       = np.log2
+eigh       = np.linalg.eigh
 def svd(ten):
     return np.linalg.svd(ten,full_matrices=False)
 
@@ -52,3 +58,5 @@ real       = np.real
 reshape    = np.reshape
 transpose  = np.transpose
 expand_dims= np.expand_dims
+take       = np.take
+argsort    = np.argsort
