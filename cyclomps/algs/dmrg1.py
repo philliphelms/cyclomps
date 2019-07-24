@@ -110,9 +110,13 @@ def renormalize_right(mps0,mps1,state_avg=True,target_state=0):
                 rdm+= w*calc_rdm(mps0[state],'right')
 
         # take eigenvalues of the rdm (use svd because of bugs with ctf.eigh)
-        (vecs,vals,_) = svd(rdm)
-        vals = sqrt(vals)
-        vecs = einsum('ij,jk->ik',vecs,diag(vals))
+        if False:
+            (vecs,vals,_) = svd(rdm)
+            vals = sqrt(vals)
+            vecs = einsum('ij,jk->ik',vecs,diag(vals))
+        else:
+            vals,vecs = eigh(rdm)
+
 
         # Sort results
         inds = argsort(vals)[::-1]
@@ -189,7 +193,7 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
     EEs = [None]*nStates
     wgt = [None]*nStates
     for state in range(nStates):
-        mps0[state],mps1[state],EE_,EEs_,wgt_ = move_gauge_left_tens(mps0[state],mps1[state])
+        _,_,EE_,EEs_,wgt_ = move_gauge_left_tens(mps0[state],mps1[state])
         EE[state] = EE_
         EEs[state] = EEs_
         wgt[state] = wgt
@@ -204,9 +208,12 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
                 rdm+= w*calc_rdm(mps1[state],'left')
 
         # take eigenvalues of the rdm (use svd because of bugs with ctf.eigh)
-        (vecs,vals,_) = svd(rdm)
-        vals = sqrt(vals)
-        vecs = einsum('ij,jk->ik',vecs,diag(vals))
+        if False:
+            (vecs,vals,_) = svd(rdm)
+            vals = sqrt(vals)
+            vecs = einsum('ij,jk->ik',vecs,diag(vals))
+        else:
+            vals,vecs = eigh(rdm)
 
         # Sort results
         inds = argsort(vals)[::-1]
@@ -431,8 +438,7 @@ def right_sweep(mps,mpo,env,
             The discarded weight for each state
     """
     t0 = time.time()
-    mpiprint(2,'\n')
-    mpiprint(2,'Beginning Right Sweep {}'.format(niter))
+    mpiprint(2,'\nBeginning Right Sweep {}'.format(niter))
     mpiprint(2,'-'*50)
     
     # Get info about mps
@@ -536,8 +542,7 @@ def left_sweep(mps,mpo,env,
             The discarded weight for each state
     """
     t0 = time.time()
-    mpiprint(2,'\n')
-    mpiprint(2,'Beginning Left Sweep {}'.format(niter))
+    mpiprint(2,'\nBeginning Left Sweep {}'.format(niter))
     mpiprint(2,'-'*50)
     
     # Get info about mps
@@ -677,8 +682,7 @@ def sweeps(mps,mpo,env,
             The discarded weight for each state
     """
     t0 = time.time()
-    mpiprint(1,'\n\n')
-    mpiprint(1,'Beginning DMRG Sweeping Algorithm')
+    mpiprint(1,'\n\nBeginning DMRG Sweeping Algorithm')
     mpiprint(1,'='*50)
 
     # Get some useful info
@@ -888,8 +892,7 @@ def dmrg(mpo,
             The resulting environment list
     """
     t0 = time.time()
-    mpiprint(0,'\n\n')
-    mpiprint(0,'Starting DMRG one-site calculation')
+    mpiprint(0,'\n\nStarting DMRG one-site calculation')
     mpiprint(0,'#'*50)
 
     # Check inputs for problems
@@ -921,8 +924,7 @@ def dmrg(mpo,
     env_res = []
     # Loop through all maximum bond dimensions
     for mbd_ind, mbdi in enumerate(mbd):
-        mpiprint(1,'\n')
-        mpiprint(1,'/'*50)
+        mpiprint(1,'\n'+'/'*50)
         mpiprint(1,'Starting Calculation for mbd = {}'.format(mbdi))
 
         # Set up initial mps
