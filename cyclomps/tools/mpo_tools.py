@@ -12,6 +12,23 @@ from numpy import array as nparray
 from numpy import int as npint
 import copy
 
+def list_configs(d):
+    """
+    List all of the possible configurations
+    """
+    if len(d) == 1:
+        configs = []
+        for config in range(d[0]):
+            configs.append([config])
+        return configs
+    else:
+        old_configs = list_configs(d[1:])
+        new_configs = []
+        for config in range(d[0]):
+            for old_config_ind in range(len(old_configs)):
+                new_configs.append( [config] + old_configs[old_config_ind] )
+        return new_configs
+
 def mpo2mat(mpoList):
     """ 
     Convert an mpoList to a matrix operator
@@ -44,28 +61,31 @@ def mpo2mat(mpoList):
     # Allocate memory for matrix operator
     matDim = prod(d)
     mat = zeros((matDim,matDim))
-
-    # Loop through all possible sites (incoming state)
-    for isite in range(nSite):
-        # Loop through states at given site (incoming state)
-        for istate in range(d[isite]):
-            # Loop through all possible sites (outgoing state)
-            for jsite in range(nSite):
-                # Loop through states at given site (outgoing state)
-                for jstate in range(d[jsite]):
-                    # Loop through all operators
-                    for opInd in range(nOps):
-                        tmp_mat = ones((1,1))
-                        # Loop through sites
-                        for site in range(nSite):
-                            if mpoList[opInd][site] is not None:
-                                tmp_mat = einsum('ab,bc->ac',tmp_mat,mpoList[opInd][site][:,istate,jstate,:])
-                            else:
-                                # Introduce identity operator (PH - Lazy way, fix this)
-                                identity = array(nparray([[npeye(2)]]))
-                                identity = einsum('abpq->apqb',identity)
-                                tmp_mat = einsum('ab,bc->ac',tmp_mat,identity[:,istate,jstate,:])
-                        mat[i,j] += tmp_mat[[0]]
+    
+    configs = list_configs(d)
+    # Loop through all possible incoming states
+    for i in range(len(configs)):
+        # Figure out actual configuration
+        iconfig = configs[i]
+        # Loop through all possible outgoing states
+        for j in range(prod(d)):
+            # Figure out actual configuration
+            jconfig = configs[j]
+            # Loop through all operators
+            for opInd in range(nOps):
+                tmp_mat = ones((1,1))
+                # Loop through sites
+                for site in range(nSite):
+                    istate = iconfig[site]
+                    jstate = jconfig[site]
+                    if mpoList[opInd][site] is not None:
+                        tmp_mat = einsum('ab,bc->ac',tmp_mat,mpoList[opInd][site][:,istate,jstate,:])
+                    else:
+                        # Introduce identity operator (PH - Lazy way, fix this)
+                        identity = array(nparray([[npeye(2)]]))
+                        identity = einsum('abpq->apqb',identity)
+                        tmp_mat = einsum('ab,bc->ac',tmp_mat,identity[:,istate,jstate,:])
+                mat[i,j] += tmp_mat[[0]]
     return mat
 
 def mpo_conj_trans(mpoList,copy=True):
