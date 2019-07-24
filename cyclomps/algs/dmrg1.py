@@ -110,13 +110,9 @@ def renormalize_right(mps0,mps1,state_avg=True,target_state=0):
                 rdm+= w*calc_rdm(mps0[state],'right')
 
         # take eigenvalues of the rdm (use svd because of bugs with ctf.eigh)
-        if False:
-            (vecs,vals,_) = svd(rdm)
-            vals = sqrt(vals)
-            vecs = einsum('ij,jk->ik',vecs,diag(vals))
-        else:
-            vals,vecs = eigh(rdm)
-
+        (vecs,vals,_) = svd(rdm)
+        vals = sqrt(vals)
+        vecs = einsum('ij,jk->ik',vecs,diag(vals))
 
         # Sort results
         inds = argsort(vals)[::-1]
@@ -208,12 +204,9 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
                 rdm+= w*calc_rdm(mps1[state],'left')
 
         # take eigenvalues of the rdm (use svd because of bugs with ctf.eigh)
-        if False:
-            (vecs,vals,_) = svd(rdm)
-            vals = sqrt(vals)
-            vecs = einsum('ij,jk->ik',vecs,diag(vals))
-        else:
-            vals,vecs = eigh(rdm)
+        (vecs,vals,_) = svd(rdm)
+        vals = sqrt(vals)
+        vecs = einsum('ij,jk->ik',vecs,diag(vals))
 
         # Sort results
         inds = argsort(vals)[::-1]
