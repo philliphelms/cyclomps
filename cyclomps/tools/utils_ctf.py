@@ -16,6 +16,8 @@ from numpy import complex128
 from numpy import complex64
 from numpy import complex_
 from numpy import float_
+from numpy import real as npreal
+from numpy import imag as npimag
 
 # Tensor Allocation
 def array(tens,dtype=None,copy=True,subok=False,ndimin=0):
@@ -28,11 +30,11 @@ def rand(shape,p=None,dtype=None):
     if dtype == complex128 or dtype == complex64:
         ten_real1 = ctf.zeros(shape,dtype=float_)
         ten_real1.fill_random()
-        ten_real2 = ctf.zeros(shape,dtype=float_)
-        ten_real2.fill_random()
+        #ten_real2 = ctf.zeros(shape,dtype=float_)
+        #ten_real2.fill_random()
         ten = ctf.zeros(shape,dtype=complex_)
         ten += ten_real1
-        ten += 1.j*ten_real2
+        #ten += 1.j*ten_real2
     else:
         ten = ctf.zeros(shape,dtype=dtype,sp=False)
         ten.fill_random()
@@ -71,9 +73,22 @@ def sqrt(a):
 conj       = ctf.conj
 diag       = ctf.diag
 diagonal   = ctf.diagonal
-imag       = ctf.imag
 ravel      = ctf.ravel
-real       = ctf.real
+
+def imag(val):
+    try:
+        val = ctf.imag(val)
+    except:
+        val = npimag(val)
+    return val
+
+def real(val):
+    try:
+        val = ctf.real(val)
+    except:
+        val = npreal(val)
+    return val
+
 reshape    = ctf.reshape
 transpose  = ctf.transpose
 to_nparray = ctf.to_nparray

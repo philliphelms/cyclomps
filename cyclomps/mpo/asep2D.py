@@ -1,6 +1,3 @@
-from numpy import ndarray as npndarray
-from numpy import ones as npones
-from numpy import zeros as npzeros
 from numpy import float_
 from cyclomps.mpo.ops import *
 from cyclomps.tools.utils import *
@@ -9,58 +6,8 @@ import collections
 from numpy import exp
 
 ############################################################################
-# General 2D Asymmetric Simple Exclusion Process:
-#
-#                        cd     du
-#                         |     /\
-#           ___ ___ ___ _\/ ___ _|_ ___ ___ ___ 
-#          |   |   |   |   |   |   |   |   |   |
-#          |___|___|___|___|___|___|___|___|___|
-#          |   |   |   |   |   |   |   |   |   |
-#          |___|___|___|___|___|___|<|ju___|___|
-#          |   |   |  _jr_ |   |   |_| |   |   |
-#          |___|___|_|_ _\/|___|___|___|___|___|
-#          |   |   |   |   |   |   |   |   |   |
-#          |___|___|___|___|___|___|___|___|___|
-#    cr--->|   |   |   |   |   |/\___| |   |   |---> dr
-#    dl<---|___|___|___|___|___|__jl___|___|___|<--- cl
-#          |   |   |  _|   |   |   |   |   |   |
-#          |___|___jd| |___|___|___|___|___|___|
-#          |   |   | |>|   |   |   |   |   |   |
-#          |___|___|___|___|___|___|___|___|___|
-#          |   |   |   |   |   |   |   |   |   |
-#          |___|___|___|___|___|___|___|___|___|
-#                        |       /\
-#                        \/      |
-#                        dd      cu
-#
-# Right & Upwards directions are positive
-#
-# Functions:
-#   return_mpo(N,hamParams):
-#       hamParams[0] = jr  (Jump to the right)
-#       hamParams[1] = jl  (Jump to the left)
-#       hamParams[2] = ju  (Jump upwards)
-#       hamParams[3] = jd  (Jump downwards)
-#       hamParams[4] = cr  (Create via right hop)
-#       hamParams[5] = cl  (Create via left hop)
-#       hamParams[6] = cu  (Create via upwards hop)
-#       hamParams[7] = cd  (Create via downwards hop)
-#       hamParams[8] = dr  (Destroy via right hop)
-#       hamParams[9] = dl  (Destroy via left hop)
-#       hamParams[10]= du  (Destroy via upwards hop)
-#       hamParams[11]= dd  (Destroy via downwards hop)
-#       hamParams[12]= sx  (Bias in the x-direction)
-#       hamParams[13]= sy  (Bias in the y-direction)
-# 
-# Note that for all of these parameters either a single value can be given
-# for each, or a matrix can be given specifying the hopping rate at each
-# site in the lattice instead of simply a general value. 
+# 2D FA model
 ###########################################################################
-
-##########################################################################
-# Hamiltonian As MPO
-##########################################################################
 
 def return_mpo(N,hamParams,periodicx=False,periodicy=False):
     if hasattr(N,'__len__'):
@@ -70,7 +17,7 @@ def return_mpo(N,hamParams,periodicx=False,periodicy=False):
         Nx = N
         Ny = N
     # Convert hamParams all to matrices
-    if not isinstance(hamParams[0],(collections.Sequence,npndarray)):
+    if not isinstance(hamParams[0],(collections.Sequence)):
         hamParams = val2matParams(Nx,Ny,hamParams)
     else:
         hamParams = extractParams(hamParams)
@@ -329,19 +276,19 @@ def val2matParams(Nx,Ny,hamParams):
     sx = hamParams[12]
     sy = hamParams[13]
     # Set interior hopping rates
-    jr_m = jr*npones((Nx,Ny),dtype=float_)
-    jl_m = jl*npones((Nx,Ny),dtype=float_)
-    ju_m = ju*npones((Nx,Ny),dtype=float_)
-    jd_m = jd*npones((Nx,Ny),dtype=float_)
+    jr_m = jr*ones((Nx,Ny),dtype=float_)
+    jl_m = jl*ones((Nx,Ny),dtype=float_)
+    ju_m = ju*ones((Nx,Ny),dtype=float_)
+    jd_m = jd*ones((Nx,Ny),dtype=float_)
     # Initialize Matrices for insertion & removal rates
-    cr_m = npzeros((Nx,Ny),dtype=float_)
-    cl_m = npzeros((Nx,Ny),dtype=float_)
-    cu_m = npzeros((Nx,Ny),dtype=float_)
-    cd_m = npzeros((Nx,Ny),dtype=float_)
-    dr_m = npzeros((Nx,Ny),dtype=float_)
-    dl_m = npzeros((Nx,Ny),dtype=float_)
-    du_m = npzeros((Nx,Ny),dtype=float_)
-    dd_m = npzeros((Nx,Ny),dtype=float_)
+    cr_m = zeros((Nx,Ny),dtype=float_)
+    cl_m = zeros((Nx,Ny),dtype=float_)
+    cu_m = zeros((Nx,Ny),dtype=float_)
+    cd_m = zeros((Nx,Ny),dtype=float_)
+    dr_m = zeros((Nx,Ny),dtype=float_)
+    dl_m = zeros((Nx,Ny),dtype=float_)
+    du_m = zeros((Nx,Ny),dtype=float_)
+    dd_m = zeros((Nx,Ny),dtype=float_)
     # Set appropriate boundary terms
     cr_m[0,:] = cr
     cl_m[-1,:] = cl
@@ -352,8 +299,8 @@ def val2matParams(Nx,Ny,hamParams):
     du_m[:,0] = du
     dd_m[:,-1] = dd
     # Set bias
-    sx_m = sx*npones((Nx,Ny),dtype=float_)
-    sy_m = sy*npones((Nx,Ny),dtype=float_)
+    sx_m = sx*ones((Nx,Ny),dtype=float_)
+    sy_m = sy*ones((Nx,Ny),dtype=float_)
     return (jr_m,jl_m,ju_m,jd_m,cr_m,cl_m,cu_m,cd_m,dr_m,dl_m,du_m,dd_m,sx_m,sy_m)
 
 def extractParams(hamParams):
@@ -388,7 +335,7 @@ def curr_mpo(N,hamParams,
         Nx = N
         Ny = N
     # Convert hamParams all to matrices
-    if not isinstance(hamParams[0],(collections.Sequence,npndarray)):
+    if not isinstance(hamParams[0],(collections.Sequence)):
         hamParams = val2matParams(Nx,Ny,hamParams)
     else:
         hamParams = extractParams(hamParams)
@@ -430,75 +377,75 @@ def single_bond_curr(Nx,Ny,hamParams,xbond,ybond,orientation):
     (jr,jl,ju,jd,cr,cl,cu,cd,dr,dl,du,dd,sx,sy) = hamParams
     # Set all params to zero, except those involved
     if orientation == 'vert':
-        jr = npzeros(jr.shape)
-        jl = npzeros(jl.shape)
-        cr = npzeros(jl.shape)
-        cl = npzeros(jl.shape)
-        dr = npzeros(jl.shape)
-        dl = npzeros(jl.shape)
+        jr = zeros(jr.shape)
+        jl = zeros(jl.shape)
+        cr = zeros(jl.shape)
+        cl = zeros(jl.shape)
+        dr = zeros(jl.shape)
+        dl = zeros(jl.shape)
         if ybond == 'top':
-            ju = npzeros(ju.shape)
-            jd = npzeros(jd.shape)
-            cu = npzeros(cu.shape)
-            dd = npzeros(dd.shape)
-            mask = npones(cd.shape,bool)
+            ju = zeros(ju.shape)
+            jd = zeros(jd.shape)
+            cu = zeros(cu.shape)
+            dd = zeros(dd.shape)
+            mask = ones(cd.shape,bool)
             mask[xbond,0] = False
             cd[mask] = 0.
             du[mask] = 0. 
         elif ybond == 'bottom':
-            ju = npzeros(ju.shape)
-            jd = npzeros(jd.shape)
-            cd = npzeros(cd.shape)
-            du = npzeros(du.shape)
-            mask = npones(cu.shape,bool)
+            ju = zeros(ju.shape)
+            jd = zeros(jd.shape)
+            cd = zeros(cd.shape)
+            du = zeros(du.shape)
+            mask = ones(cu.shape,bool)
             mask[xbond,-1] = False
             cu[mask] = 0.
             dd[mask] = 0.
         else:
-            cu = npzeros(cu.shape)
-            cd = npzeros(cd.shape)
-            du = npzeros(du.shape)
-            dd = npzeros(dd.shape)
-            mask = npones(ju.shape,bool)
+            cu = zeros(cu.shape)
+            cd = zeros(cd.shape)
+            du = zeros(du.shape)
+            dd = zeros(dd.shape)
+            mask = ones(ju.shape,bool)
             mask[xbond,ybond+1] = False
             ju[mask] = 0.
-            mask = npones(jd.shape,bool)
+            mask = ones(jd.shape,bool)
             mask[xbond,ybond] = False
             jd[mask] = 0.
     elif orientation == 'horz':
-        ju = npzeros(jr.shape)
-        jd = npzeros(jl.shape)
-        cu = npzeros(jl.shape)
-        cd = npzeros(jl.shape)
-        du = npzeros(jl.shape)
-        dd = npzeros(jl.shape)
+        ju = zeros(jr.shape)
+        jd = zeros(jl.shape)
+        cu = zeros(jl.shape)
+        cd = zeros(jl.shape)
+        du = zeros(jl.shape)
+        dd = zeros(jl.shape)
         if xbond == 'left':
-            jr = npzeros(jr.shape)
-            jl = npzeros(jl.shape)
-            cl = npzeros(cl.shape)
-            dr = npzeros(dr.shape)
-            mask = npones(dl.shape,bool)
+            jr = zeros(jr.shape)
+            jl = zeros(jl.shape)
+            cl = zeros(cl.shape)
+            dr = zeros(dr.shape)
+            mask = ones(dl.shape,bool)
             mask[0,ybond] = False
             dl[mask] = 0.
             cr[mask] = 0.
         elif xbond == 'right':
-            jr = npzeros(jr.shape)
-            jl = npzeros(jl.shape)
-            dl = npzeros(dl.shape)
-            cr = npzeros(cr.shape)
-            mask = npones(dr.shape,bool)
+            jr = zeros(jr.shape)
+            jl = zeros(jl.shape)
+            dl = zeros(dl.shape)
+            cr = zeros(cr.shape)
+            mask = ones(dr.shape,bool)
             mask[-1,ybond] = False
             dr[mask] = 0.
             cl[mask] = 0.
         else:
-            cr = npzeros(cu.shape)
-            cl = npzeros(cd.shape)
-            dr = npzeros(du.shape)
-            dl = npzeros(dd.shape)
-            mask = npones(jr.shape,bool)
+            cr = zeros(cu.shape)
+            cl = zeros(cd.shape)
+            dr = zeros(du.shape)
+            dl = zeros(dd.shape)
+            mask = ones(jr.shape,bool)
             mask[xbond,ybond] = False
             jr[mask] = 0.
-            mask = npones(jl.shape,bool)
+            mask = ones(jl.shape,bool)
             mask[xbond+1,ybond] = False
             jl[mask] = 0.
     hamParams = (jr,jl,ju,jd,cr,cl,cu,cd,dr,dl,du,dd,sx,sy)
@@ -993,7 +940,7 @@ def act_mpo(N,hamParams,
         Nx = N
         Ny = N
     # Convert hamParams all to matrices
-    if not isinstance(hamParams[0],(collections.Sequence,npndarray)):
+    if not isinstance(hamParams[0],(collections.Sequence)):
         hamParams = val2matParams(Nx,Ny,hamParams)
     else:
         hamParams = extractParams(hamParams)
@@ -1035,75 +982,75 @@ def single_bond_act(Nx,Ny,hamParams,xbond,ybond,orientation):
     (jr,jl,ju,jd,cr,cl,cu,cd,dr,dl,du,dd,sx,sy) = hamParams
     # Set all params to zero, except those involved
     if orientation == 'vert':
-        jr = npzeros(jr.shape)
-        jl = npzeros(jl.shape)
-        cr = npzeros(jl.shape)
-        cl = npzeros(jl.shape)
-        dr = npzeros(jl.shape)
-        dl = npzeros(jl.shape)
+        jr = zeros(jr.shape)
+        jl = zeros(jl.shape)
+        cr = zeros(jl.shape)
+        cl = zeros(jl.shape)
+        dr = zeros(jl.shape)
+        dl = zeros(jl.shape)
         if ybond == 'top':
-            ju = npzeros(ju.shape)
-            jd = npzeros(jd.shape)
-            cu = npzeros(cu.shape)
-            dd = npzeros(dd.shape)
-            mask = npones(cd.shape,bool)
+            ju = zeros(ju.shape)
+            jd = zeros(jd.shape)
+            cu = zeros(cu.shape)
+            dd = zeros(dd.shape)
+            mask = ones(cd.shape,bool)
             mask[xbond,0] = False
             cd[mask] = 0.
             du[mask] = 0. 
         elif ybond == 'bottom':
-            ju = npzeros(ju.shape)
-            jd = npzeros(jd.shape)
-            cd = npzeros(cd.shape)
-            du = npzeros(du.shape)
-            mask = npones(cu.shape,bool)
+            ju = zeros(ju.shape)
+            jd = zeros(jd.shape)
+            cd = zeros(cd.shape)
+            du = zeros(du.shape)
+            mask = ones(cu.shape,bool)
             mask[xbond,-1] = False
             cu[mask] = 0.
             dd[mask] = 0.
         else:
-            cu = npzeros(cu.shape)
-            cd = npzeros(cd.shape)
-            du = npzeros(du.shape)
-            dd = npzeros(dd.shape)
-            mask = npones(ju.shape,bool)
+            cu = zeros(cu.shape)
+            cd = zeros(cd.shape)
+            du = zeros(du.shape)
+            dd = zeros(dd.shape)
+            mask = ones(ju.shape,bool)
             mask[xbond,ybond+1] = False
             ju[mask] = 0.
-            mask = npones(jd.shape,bool)
+            mask = ones(jd.shape,bool)
             mask[xbond,ybond] = False
             jd[mask] = 0.
     elif orientation == 'horz':
-        ju = npzeros(jr.shape)
-        jd = npzeros(jl.shape)
-        cu = npzeros(jl.shape)
-        cd = npzeros(jl.shape)
-        du = npzeros(jl.shape)
-        dd = npzeros(jl.shape)
+        ju = zeros(jr.shape)
+        jd = zeros(jl.shape)
+        cu = zeros(jl.shape)
+        cd = zeros(jl.shape)
+        du = zeros(jl.shape)
+        dd = zeros(jl.shape)
         if xbond == 'left':
-            jr = npzeros(jr.shape)
-            jl = npzeros(jl.shape)
-            cl = npzeros(cl.shape)
-            dr = npzeros(dr.shape)
-            mask = npones(dl.shape,bool)
+            jr = zeros(jr.shape)
+            jl = zeros(jl.shape)
+            cl = zeros(cl.shape)
+            dr = zeros(dr.shape)
+            mask = ones(dl.shape,bool)
             mask[0,ybond] = False
             dl[mask] = 0.
             cr[mask] = 0.
         elif xbond == 'right':
-            jr = npzeros(jr.shape)
-            jl = npzeros(jl.shape)
-            dl = npzeros(dl.shape)
-            cr = npzeros(cr.shape)
-            mask = npones(dr.shape,bool)
+            jr = zeros(jr.shape)
+            jl = zeros(jl.shape)
+            dl = zeros(dl.shape)
+            cr = zeros(cr.shape)
+            mask = ones(dr.shape,bool)
             mask[-1,ybond] = False
             dr[mask] = 0.
             cl[mask] = 0.
         else:
-            cr = npzeros(cu.shape)
-            cl = npzeros(cd.shape)
-            dr = npzeros(du.shape)
-            dl = npzeros(dd.shape)
-            mask = npones(jr.shape,bool)
+            cr = zeros(cu.shape)
+            cl = zeros(cd.shape)
+            dr = zeros(du.shape)
+            dl = zeros(dd.shape)
+            mask = ones(jr.shape,bool)
             mask[xbond,ybond] = False
             jr[mask] = 0.
-            mask = npones(jl.shape,bool)
+            mask = ones(jl.shape,bool)
             mask[xbond+1,ybond] = False
             jl[mask] = 0.
     hamParams = (jr,jl,ju,jd,cr,cl,cu,cd,dr,dl,du,dd,sx,sy)

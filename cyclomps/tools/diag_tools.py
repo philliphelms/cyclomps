@@ -14,7 +14,8 @@ from cyclomps.tools.params import *
 from cyclomps.tools.mps_tools import mps_load_ten
 from cyclomps.tools.env_tools import env_load_ten
 #from pyscf.lib import eig as davidson
-from cyclomps.tools.la_tools import eig as davidson
+from cyclomps.tools.la_tools import eig as la_davidson
+from cyclomps.tools.la_tools import davidson as la_davidsonh
 from scipy.sparse.linalg import eigs as arnoldi
 from scipy.sparse.linalg import LinearOperator
 from numpy import complex_
@@ -55,6 +56,72 @@ def calc_ovlp(state1,state2):
         ovlp[state] = ovlps[state,state]
         mpiprint(4,'State {}, 1-Overlap: {}'.format(state,1.-ovlp[state]))
     return ovlp
+
+def davidsonh1(mps,mpo,envl,envr):
+    """ 
+    Calculate the eigenvalues and eigenvectors with the hermitian davidson algorithm
+
+    args:
+        mps : 1d array of np or ctf tensors
+            a list containing the mps tensor for each desired 
+            state at the optimization site
+        mpo : 1d array of np or ctf tensors
+            a list containing the mpo tensor for each 
+            operator at the optimization site
+        envl : 1d array of np or ctf tensors
+            a list containing the left env tensor for each
+            operator at the optimization site
+        envr : 1d array of np or ctf tensors
+            a list containing the right env tensor for each
+            operator at the optimization site
+
+    returns:
+        e : 1d array
+            a 1d array of the energy associated with each state 
+            of the system
+        mps : 1d array of np or ctf tensors
+            a list containing the resulting mps tensor for each
+            state from the optimization
+        ovlp : float
+            the overlap between the input guess and output state
+    """
+    mpiprint(6,'Doing Hermitian Davidson optimization routine')
+
+    # Compute the number of states
+    nStates = len(mps)
+
+    # Make the hamiltonian function
+    hop,precond = make_ham_func1(mps,mpo,envl,envr)
+
+    # Determine initial guess
+    guess = []
+    for state in range(nStates):
+        guess.append(ravel(mps[state]))
+
+    # Send to davidson algorithm
+    E,vecso = la_davidsonh(hop,guess,precond,
+                         nroots=nStates,
+                         follow_state=False,tol=DAVIDSON_TOL,
+                         max_cycle=DAVIDSON_MAX_ITER)
+    E = -E 
+    # davidson occasionally does not return enough states
+    try:
+        inds = argsort(real(E))[::-1]
+        E = take(E,inds[:nStates])
+        vecs = zeros((vecso[0].shape[0],nStates),dtype=type(vecso[0][0]))
+        for vec_ind in range(min(nStates,len(inds))):
+            vecs[:,vec_ind] = vecso[inds[vec_ind]]
+    except:
+        vecs = vecso
+
+    # Convert vecs into original mps shape
+    _mps = mps
+    mps = vec2mps(vecs,mps)
+
+    # Check the overlap
+    ovlp = calc_ovlp(mps,_mps)
+
+    return E,mps,ovlp
 
 def davidson1(mps,mpo,envl,envr):
     """ 
@@ -98,7 +165,7 @@ def davidson1(mps,mpo,envl,envr):
         guess.append(ravel(mps[state]))
 
     # Send to davidson algorithm
-    E,vecso = davidson(hop,guess,precond,
+    E,vecso = la_davidson(hop,guess,precond,
                          nroots=nStates,pick=pick_eigs,
                          follow_state=False,tol=DAVIDSON_TOL,
                          max_cycle=DAVIDSON_MAX_ITER)
@@ -164,7 +231,7 @@ def make_ham_func1(mps,mpo,envl,envr):
         mpiprint(9,'Inside hop function')
         # Process input
         x = reshape(x,mps[0].shape)
-        res = zeros_like(x,dtype=complex_)
+        res = zeros_like(x,dtype=x.dtype)
         # Loop over all operators
         for op in range(len(mpo)):
             if mpo[op] is None:
@@ -314,6 +381,61 @@ def arnoldi1(mps,mpo,envl,envr):
 
     return E,mps,ovlp
 
+def exacth1(mps,mpo,envl,envr):
+    """ 
+    Calculate the eigenvalues and eigenvectors by explicitly computing the Hamiltonian
+
+    Args:
+        mps : 1d array of np or ctf tensors
+            a list containing the mps tensor for each desired 
+            state at the optimization site
+        mpo : 1d array of np or ctf tensors
+            a list containing the mpo tensor for each 
+            operator at the optimization site
+        envl : 1d array of np or ctf tensors
+            a list containing the left env tensor for each
+            operator at the optimization site
+        envr : 1d array of np or ctf tensors
+            a list containing the right env tensor for each
+            operator at the optimization site
+
+    Returns:
+        E : 1d array
+            a 1d array of the energy associated with each state 
+            of the system
+        mps : 1d array of np or ctf tensors
+            a list containing the resulting mps tensor for each
+            state from the optimization
+        ovlp : float
+            the overlap between the input guess and output state
+    """
+    mpiprint(6,'Doing Exact optimization routine')
+    
+    # Figure out number of states required
+    nState = len(mps)
+
+    # Compute the full Hamiltonian
+    H = calc_ham1(mps,mpo,envl,envr)
+
+    # Diagonalize and sort
+    if USE_CTF: H = to_nparray(H)
+    E,vecs = sla.eigh(H)
+    inds = npargsort(E)[::-1]
+    E = E[inds[:nState]]
+    vecs = vecs[:,inds[:nState]]
+
+    # Convert vecs back to ctf if needed
+    if USE_CTF: vecs = from_nparray(vecs)
+
+    # Convert vecs into original mps shape
+    _mps = mps
+    mps = vec2mps(vecs,mps)
+
+    # Check the overlap
+    # PH - Need to implement
+    ovlp = calc_ovlp(_mps,mps)
+
+    return E,mps,ovlp
 
 def exact1(mps,mpo,envl,envr):
     """ 
@@ -460,8 +582,8 @@ def eig1(mps,mpo,envl,envr,
     Kwargs:
         alg : string
             The algorithm that will be used. Available options are
-            'arnoldi', 'exact', and 'davidson', current default is 
-            'davidson'.
+            'arnoldi', 'exact', 'davidsonh', and 'davidson'. 
+            Current default is 'davidson'.
 
     Returns:
         E : 1D Array
@@ -481,5 +603,11 @@ def eig1(mps,mpo,envl,envr,
 
     elif alg == 'arnoldi':
         E,mps,ovlp = arnoldi1(mps,mpo,envl,envr)
+
+    elif alg == 'exacth':
+        E,mps,ovlp = exacth1(mps,mpo,envl,envr)
+
+    elif alg == 'davidsonh':
+        E,mps,ovlp = davidsonh1(mps,mpo,envl,envr)
 
     return E,mps,ovlp

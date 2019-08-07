@@ -18,3 +18,4 @@ CTF.
 * Must run test_algs.py and test_renorm.py separately when using CTF
 * Problems using eigh in state averaged renormalization - temporarily fixed by doing svd on the rdm
 * CTF seems to have trouble using '-1' as an index - need to make sure we are avoiding this.
+* expand_dims does not work when running ctf on multiple processors (used in some mpos)

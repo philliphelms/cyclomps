@@ -19,6 +19,14 @@ import os
 from numpy import float_,complex_,int
 import copy
 
+def mps_add_noise(mps,mag):
+    """
+    Add noise to a mps tensor
+    """
+    for state in range(len(mps)):
+        mps[state] += mag*rand(mps[state].shape,mps[state].dtype)
+    return mps
+
 def create_mps_list(d,mbd,nStates,
                     sparse=False,dtype=complex_,
                     periodic=False,fixed_bd=False,
@@ -694,9 +702,7 @@ def move_gauge_left(mpsList,state,site,return_ent=True,return_wgt=True):
     ten2 = mps_load_ten(mpsList,state,site)
 
     # Transfer the gauge
-    init_contraction = einsum('ijk,klm->ijlm',ten1,ten2)
     ten1,ten2,EE,EEs,wgt = move_gauge_left_tens(ten1,ten2)
-    final_contraction = einsum('ijk,klm->ijlm',ten1,ten2)
     
     # Save the results
     mps_save_ten(ten1,mpsList,state,site-1)
@@ -1158,7 +1164,8 @@ def contract_config(mpsList,config,norm=None,state=0,gSite=0):
 
 def increase_bond_dim(mpsList,mbd,
                       copy=True,fixed_bd=False,
-                      copy_subdir='mps',periodic=False):
+                      copy_subdir='mps',periodic=False,
+                      noise=1.):
     """
     Create a copy of an mpsList
 
@@ -1183,6 +1190,9 @@ def increase_bond_dim(mpsList,mbd,
             this ensures that all bond dimensions are constant
             throughout the MPS, i.e. mps[0].dim = (1 x d[0] x mbd)
             instead of mps[0].dim = (1 x d[0] x d[0]), and so forth.
+        noise: bool
+            The magnitude of random noise to add to tensors as their
+            bond dimension is increased
 
     Returns:
         mpsList : 1D Array of Matrix Product States
@@ -1199,6 +1209,7 @@ def increase_bond_dim(mpsList,mbd,
     if copy: mpsList = mps_copy(mpsList,subdir=copy_subdir)
 
     # Loop through all states
+    noise /= mbd**2
     for state in range(nState):
 
         # Loop through all sites
@@ -1216,7 +1227,7 @@ def increase_bond_dim(mpsList,mbd,
             mpsList[state][site]['dims'] = dims
             
             # Create new CTF/np array
-            new_ten = zeros(dims,dtype=dtype)
+            new_ten = noise*rand(dims,dtype=dtype)
 
             # Fill in old tensor
             new_ten[:dim_old[0],:dim_old[1],:dim_old[2]] = old_ten

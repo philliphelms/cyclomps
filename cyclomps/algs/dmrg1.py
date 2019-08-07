@@ -238,7 +238,7 @@ def renormalize_left(mps0,mps1,state_avg=True,target_state=0):
 
     return mps0,mps1,EE,EEs,wgt 
 
-def right_step(site,mps,mpo,env,
+def right_step(site,mps,mpo,env,nSweep,
                alg='davidson',
                noise=0.,
                orthonormalize=False,
@@ -257,6 +257,9 @@ def right_step(site,mps,mpo,env,
     # Solve Eigenproblem
     E,mps0,ovlp = eig1(mps0,mpo,envl,envr,alg=alg)
     mpiprint(3,'Right Step at site {}, E = {}'.format(site,E))
+
+    # Add noise
+    #mps0 = mps_add_noise(mps0,10**(-nSweep*100))
 
     # Perform Renormalization
     (mps1,) = retrieve_tensors(site+1,mpsList=mps)
@@ -277,7 +280,7 @@ def right_step(site,mps,mpo,env,
     # Return results
     return E,EE,EEs,wgt
 
-def left_step(site,mps,mpo,env,
+def left_step(site,mps,mpo,env,nSweep,
               alg='davidson',
               noise=0.,
               orthonormalize=False,
@@ -346,6 +349,9 @@ def left_step(site,mps,mpo,env,
     E,mps1,ovlp = eig1(mps1,mpo,envl,envr,alg=alg)
     mpiprint(3,'Left Step at site {}, E = {}'.format(site,E))
 
+    # Add noise
+    #mps1 = mps_add_noise(mps1,10**(-nSweep*100))
+
     # Perform Renormalization
     mps0,mps1,EE,EEs,wgt = renormalize_left(mps0,mps1,
                                  state_avg=state_avg)
@@ -364,7 +370,7 @@ def left_step(site,mps,mpo,env,
     # Return results
     return E,EE,EEs,wgt
 
-def right_sweep(mps,mpo,env,
+def right_sweep(mps,mpo,env,nSweep,
                 alg='davidson',
                 start_site=None,
                 end_site=None,
@@ -449,7 +455,7 @@ def right_sweep(mps,mpo,env,
     for site in range(start_site,end_site):
 
         # Step left at each site
-        E_,EE_,EEs_,wgt_ = right_step(site,mps,mpo,env,
+        E_,EE_,EEs_,wgt_ = right_step(site,mps,mpo,env,nSweep,
                                       alg=alg,
                                       noise=noise,
                                       orthonormalize=orthonormalize,
@@ -468,7 +474,7 @@ def right_sweep(mps,mpo,env,
     # Return result
     return E,EE,EEs,wgt
 
-def left_sweep(mps,mpo,env,
+def left_sweep(mps,mpo,env,nSweep,
                alg='davidson',
                start_site=None,
                end_site=None,
@@ -553,7 +559,7 @@ def left_sweep(mps,mpo,env,
     for site in range(start_site,end_site,-1):
 
         # Step left at each site
-        E_,EE_,EEs_,wgt_ = left_step(site,mps,mpo,env,
+        E_,EE_,EEs_,wgt_ = left_step(site,mps,mpo,env,nSweep,
                                      alg=alg,
                                      noise=noise,
                                      orthonormalize=orthonormalize,
@@ -699,7 +705,7 @@ def sweeps(mps,mpo,env,
         else:
             start_site = 0
 
-        res = right_sweep(mps,mpo,env,
+        res = right_sweep(mps,mpo,env,niter,
                           alg=alg,
                           start_site=start_site,
                           end_site=nSites-1,
@@ -709,7 +715,7 @@ def sweeps(mps,mpo,env,
                           niter=niter)
 
         # Run Left Sweep
-        res =  left_sweep(mps,mpo,env,
+        res =  left_sweep(mps,mpo,env,niter,
                           alg=alg,
                           start_site=nSites-1,
                           end_site=end_site,
@@ -723,7 +729,7 @@ def sweeps(mps,mpo,env,
         cont,conv,niter,Eprev = check_conv(cont,conv,niter,E,Eprev,tol,min_iter,max_iter)
 
     # One last sweep, to move gauge
-    resf= right_sweep(mps,mpo,env,
+    resf= right_sweep(mps,mpo,env,1e10,
                       alg=alg,
                       start_site=0,
                       end_site=end_gauge,

@@ -2,11 +2,15 @@ from cyclomps.tools.utils import *
 from cyclomps.algs.dmrg1 import dmrg
 from cyclomps.mpo.asep2D import return_mpo
 from numpy import complex as complex_
+from sys import argv
 
 # System Size
-Ny = 5
-Nx = 5
-mbd = [10,100,500,1000,5000,10000,50000,100000]
+Ny = int(argv[1])
+Nx = int(argv[2])
+mbd = []
+for i in range(3,len(argv)):
+    mbd.append(int(argv[i]))
+print(mbd)
 
 # Hamiltonian Parameters
 bcs = 'open'
@@ -29,7 +33,7 @@ sy = 0.
 alg = 'davidson'
 tol = 1e-5
 max_iter = 5
-min_iter = 3 
+min_iter = 1
 mps_dir = 'asep2D_mps'
 env_dir = 'asep2D_env'
 nStates = 2
@@ -51,15 +55,6 @@ elif bcs == 'periodic':
     hamParams = array([jr,jl,ju,jd,cr,cl,0.,0.,dr,dl,0.,0.,sx,sy])
     periodicy = True
 mpo = return_mpo((Nx,Ny),hamParams,periodicy=periodicy,periodicx=periodicx)
-
-
-# Set Calculation Parameters
-p = 0.1 
-s0 = -0.5
-sF = 0.5
-ds0 = 0.01
-alg = 'davidson'
-leftState = False
 
 E0 = dmrg(mpo,
           alg=alg,

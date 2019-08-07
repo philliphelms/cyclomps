@@ -44,7 +44,7 @@ def mpo2mat(mpoList):
             A 2D array containing the matrix version of the input
             mpo
     """
-    mpiprint(3,'Converting mpoList to a matrix operator')
+    mpiprint(5,'Converting mpoList to a matrix operator')
 
     # Get details about mpo
     nOps = len(mpoList)
