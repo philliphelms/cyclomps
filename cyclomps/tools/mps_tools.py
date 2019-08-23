@@ -81,6 +81,8 @@ def create_mps_list(d,mbd,nStates,
                                        sparse=sparse,dtype=dtype,
                                        periodic=periodic,fixed_bd=fixed_bd,
                                        loc=CALCDIR+subdir))
+
+    # Return result
     return mpsList
 
 def create_rand_mps(d,mbd,state,
@@ -1271,3 +1273,53 @@ def mps_local_dim(mpsList):
 
     # Return Results
     return d
+
+def contract(mps=None,mpo=None,lmps=None,state=None,lstate=None,gSite=None,glSite=None):
+    """
+    Contractions of MPSs and MPOs
+    """
+    from cyclomps.tools.env_tools import alloc_env,update_env_left,env_load_ten
+    # Make sure we are given at least one state
+    assert(not ( (lmps is None) and (mps is None)))
+
+    # Copy State if only one is given
+    if lmps is None: 
+        lmps = mps
+    if mps is None: 
+        mps = lmps
+
+    # Figure out size of mps
+    N = len(mps[0])
+
+    # Fill in default entries if None is given
+    if (state is None) and (lstate is None):
+        state,lstate = 0,0
+    elif state is None:
+        state = lstate
+    elif lstate is None:
+        lstate = state
+
+    # Get the specific state desired
+    #lmps_ss = lmps[lstate]
+    #mps_ss = mps[state]
+
+    # Make empty mpo if none is provided
+    if mpo is None:
+        mpo = [[None]*N]
+    
+    # Create empty environment
+    env = alloc_env(mps,mpo,subdir='contract_env')
+    
+    # Calculate Environment From Right
+    for site in reversed(range(int(N))):
+        env = update_env_left(mps,mpo,env,site,mpslList=lmps,state=state)
+
+    # Extract energy from result
+    Nenv = len(env)
+    result = 0
+    for j in range(Nenv):
+        envLoc = env_load_ten(env,j,0)
+        result += envLoc[0,0,0]
+
+    # Return resulting contracted value
+    return result

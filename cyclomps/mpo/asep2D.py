@@ -3,7 +3,6 @@ from cyclomps.mpo.ops import *
 from cyclomps.tools.utils import *
 from cyclomps.tools.mpo_tools import reorder_bonds
 import collections
-from numpy import exp
 
 ############################################################################
 # 2D FA model

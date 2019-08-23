@@ -10,7 +10,25 @@ from cyclomps.tools.utils import *
 from numpy import eye as npeye
 from numpy import array as nparray
 from numpy import int as npint
+from scipy.linalg import expm as sla_expm
 import copy
+
+def expm(m,a=1.):
+    """ 
+    Take the exponential of a matrix
+    """
+    m = to_nparray(m)
+    m *= a
+    m = sla_expm(m)
+    m = from_nparray(m)
+    return m
+
+def quick_op(op1,op2):
+    """
+    Convert two local operators (2 legs each)
+    into an operator between sites (4 legs)
+    """
+    return einsum('io,IO->iIoO',op1,op2)
 
 def list_configs(d):
     """

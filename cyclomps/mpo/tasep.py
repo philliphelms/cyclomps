@@ -16,7 +16,7 @@ Date: June 2019
 """
 
 from cyclomps.tools.utils import *
-from cyclomps.tools.mpo_tools import reorder_bonds
+from cyclomps.tools.mpo_tools import *
 from cyclomps.mpo.ops import *
 from numpy import exp
 
@@ -150,3 +150,36 @@ def periodic_curr(N,hamParams):
     mpo_p1[0] = array([[Sm]])
     mpoL.append(mpo_p1)
     return mpoL
+
+# TEBD Operators --------------------------
+def return_tebd_ops(N,hamParams):
+    # Unpack Ham Params ############################
+    p = 1.
+    a = hamParams[0]
+    b = hamParams[1]
+    s = hamParams[2]
+    exp_a = a*exp(s)
+    exp_b = b*exp(s)
+    exp_p = p*exp(s)
+    # Create Operators ###################################
+    # List to hold all operators
+    op_list = []
+    # Initial Site
+    op  = exp_a *quick_op(Sm, I)
+    op -= a     *quick_op( v, I)
+    op += exp_p *quick_op(Sp,Sm)
+    op -= p     *quick_op( n, v)
+    op_list.append(op)
+    # Central Sites
+    for site in range(1,N-2):
+        op  = exp_p *quick_op(Sp,Sm)
+        op -= p     *quick_op( n, v)
+        op_list.append(op)
+    # Last Site
+    op  = exp_p * quick_op(Sp,Sm)
+    op -= p     * quick_op( n, v)
+    op += exp_b * quick_op( I,Sp)
+    op -= b     * quick_op( I, n)
+    op_list.append(op)
+
+    return op_list

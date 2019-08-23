@@ -44,6 +44,7 @@ prod       = np.prod
 sqrt       = np.sqrt
 log2       = np.log2
 eigh       = np.linalg.eigh
+exp        = np.exp
 def svd(ten):
     return np.linalg.svd(ten,full_matrices=False)
 

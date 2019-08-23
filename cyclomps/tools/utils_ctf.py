@@ -18,6 +18,7 @@ from numpy import complex_
 from numpy import float_
 from numpy import real as npreal
 from numpy import imag as npimag
+from numpy import exp as npexp
 
 # Tensor Allocation
 def array(tens,dtype=None,copy=True,subok=False,ndimin=0):
@@ -56,6 +57,11 @@ eigh       = ctf.eigh
 #        return summ(res)
 #    else:
 #        return res
+def exp(m):
+    m = to_nparray(m)
+    m = npexp(m)
+    m = from_nparray(m)
+    return m
 def log2(a):
     return ctf.from_nparray(nplog2(ctf.to_nparray(a)))
 def prod(a):

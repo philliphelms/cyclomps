@@ -9,20 +9,20 @@ Ny = int(argv[1])
 Nx = int(argv[2])
 
 # Hamiltonian Parameters
-bcs = 'open'
-jr = 0.1
-jl = 1.-jr
-ju = 0.5
-jd = 0.5
-cr = 0.5
-cl = 0.5
-cu = 0.5
-cd = 0.5
-dr = 0.5
-dl = 0.5
-du = 0.5
-dd = 0.5
-sx = -0.5
+bcs = 'closed'
+jr = 1.
+jl = 0.
+ju = 0.
+jd = 0.
+cr = 0.35
+cl = 0.
+cu = 0.
+cd = 0.
+dr = 2./3.
+dl = 0.
+du = 0.
+dd = 0.
+sx = -1.
 sy = 0.
 
 # Calculate Settings
