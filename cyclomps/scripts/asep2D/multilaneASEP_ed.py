@@ -14,15 +14,15 @@ jr = 1.
 jl = 0.
 ju = 0.
 jd = 0.
-cr = 0.35
+cr = 0.5
 cl = 0.
 cu = 0.
 cd = 0.
-dr = 2./3.
+dr = 0.5
 dl = 0.
 du = 0.
 dd = 0.
-sx = -1.
+sx = 0.
 sy = 0.
 
 # Calculate Settings

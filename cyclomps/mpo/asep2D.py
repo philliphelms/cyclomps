@@ -239,6 +239,152 @@ def periodic_y_mpo(Nx,Ny,hamParams):
                 mpoL.append(op2)
     return mpoL
 
+def single_bond_energy(N,hamParams,xbond,ybond,orientation):
+    if hasattr(N,'__len__'):
+        Nx = N[0]
+        Ny = N[1]
+    else:
+        Nx = N
+        Ny = N
+    # Convert hamParams all to matrices
+    if not isinstance(hamParams[0],(collections.Sequence)):
+        hamParams = val2matParams(Nx,Ny,hamParams)
+    else:
+        hamParams = extractParams(hamParams)
+    # Extract parameter Values
+    (jr,jl,ju,jd,cr,cl,cu,cd,dr,dl,du,dd,sx,sy) = hamParams
+    # Set all params to zero, except those involved
+    if orientation == 'vert':
+        jr = zeros(jr.shape)
+        jl = zeros(jl.shape)
+        cr = zeros(jl.shape)
+        cl = zeros(jl.shape)
+        dr = zeros(jl.shape)
+        dl = zeros(jl.shape)
+        if ybond == 'top':
+            ju = zeros(ju.shape)
+            jd = zeros(jd.shape)
+            cu = zeros(cu.shape)
+            dd = zeros(dd.shape)
+            mask = ones(cd.shape,bool)
+            mask[xbond,0] = False
+            cd[mask] = 0.
+            du[mask] = 0. 
+        elif ybond == 'bottom':
+            ju = zeros(ju.shape)
+            jd = zeros(jd.shape)
+            cd = zeros(cd.shape)
+            du = zeros(du.shape)
+            mask = ones(cu.shape,bool)
+            mask[xbond,-1] = False
+            cu[mask] = 0.
+            dd[mask] = 0.
+        else:
+            cu = zeros(cu.shape)
+            cd = zeros(cd.shape)
+            du = zeros(du.shape)
+            dd = zeros(dd.shape)
+            mask = ones(ju.shape,bool)
+            mask[xbond,ybond+1] = False
+            ju[mask] = 0.
+            mask = ones(jd.shape,bool)
+            mask[xbond,ybond] = False
+            jd[mask] = 0.
+    elif orientation == 'horz':
+        ju = zeros(jr.shape)
+        jd = zeros(jl.shape)
+        cu = zeros(jl.shape)
+        cd = zeros(jl.shape)
+        du = zeros(jl.shape)
+        dd = zeros(jl.shape)
+        if xbond == 'left':
+            jr = zeros(jr.shape)
+            jl = zeros(jl.shape)
+            cl = zeros(cl.shape)
+            dr = zeros(dr.shape)
+            mask = ones(dl.shape,bool)
+            mask[0,ybond] = False
+            dl[mask] = 0.
+            cr[mask] = 0.
+        elif xbond == 'right':
+            jr = zeros(jr.shape)
+            jl = zeros(jl.shape)
+            dl = zeros(dl.shape)
+            cr = zeros(cr.shape)
+            mask = ones(dr.shape,bool)
+            mask[-1,ybond] = False
+            dr[mask] = 0.
+            cl[mask] = 0.
+        else:
+            cr = zeros(cu.shape)
+            cl = zeros(cd.shape)
+            dr = zeros(du.shape)
+            dl = zeros(dd.shape)
+            mask = ones(jr.shape,bool)
+            mask[xbond,ybond] = False
+            jr[mask] = 0.
+            mask = ones(jl.shape,bool)
+            mask[xbond+1,ybond] = False
+            jl[mask] = 0.
+    hamParams = (jr,jl,ju,jd,cr,cl,cu,cd,dr,dl,du,dd,sx,sy)
+    (ejr,ejl,eju,ejd,ecr,ecl,ecu,ecd,edr,edl,edu,edd) = exponentiateBias(hamParams)
+    # List to hold all MPOs
+    mpoL = []
+    # Main MPO
+    mpo = []
+    ham_dim = 10+(Ny-2)*4
+    mpiprint(5,'Hamiltonian Bond Dimension = {}'.format(ham_dim))
+    for xi in range(Nx):
+        for yi in range(Ny):
+            # Build generic MPO
+            gen_mpo = zeros((ham_dim,ham_dim,2,2))
+            gen_mpo[0,0,:,:] = I 
+            gen_mpo[1,0,:,:] = ejr[xi-1,yi]*Sm
+            gen_mpo[Ny,0,:,:] = ejd[xi,yi-1]*Sm
+            gen_mpo[Ny+1,0,:,:] = jr[xi-1,yi]*v
+            gen_mpo[2*Ny,0,:,:] = jd[xi,yi-1]*v
+            gen_mpo[2*Ny+1,0,:,:] = ejl[xi,yi]*Sp
+            gen_mpo[3*Ny,0,:,:] = eju[xi,yi]*Sp
+            gen_mpo[3*Ny+1,0,:,:] = jl[xi,yi]*n
+            gen_mpo[4*Ny,0,:,:] = ju[xi,yi]*n
+            # Build generic interior
+            col_ind = 1
+            row_ind = 2
+            for k in range(4): 
+                for l in range(Ny-1):
+                    gen_mpo[row_ind,col_ind,:,:] = I
+                    col_ind += 1
+                    row_ind += 1
+                col_ind += 1
+                row_ind += 1
+            # Build bottom row
+            gen_mpo[ham_dim-1,Ny,:,:] = Sp
+            gen_mpo[ham_dim-1,2*Ny,:,:] = -n
+            gen_mpo[ham_dim-1,3*Ny,:,:] = Sm
+            gen_mpo[ham_dim-1,4*Ny,:,:] = -v
+            gen_mpo[ham_dim-1,4*Ny+1,:,:] = I
+            # Include creation & annihilation
+            gen_mpo[ham_dim-1,0,:,:] += (ecr[xi,yi] + ecl[xi,yi] + ecd[xi,yi] + ecu[xi,yi])*Sm -\
+                                 ( cr[xi,yi] +  cl[xi,yi] +  cd[xi,yi] +  cu[xi,yi])*v  +\
+                                 (edr[xi,yi] + edl[xi,yi] + edd[xi,yi] + edu[xi,yi])*Sp -\
+                                 ( dr[xi,yi] +  dl[xi,yi] +  dd[xi,yi] +  du[xi,yi])*n
+            # Prevent interaction between ends
+            if (yi == 0) and (xi != 0):
+                gen_mpo[Ny,0,:,:] = z
+                gen_mpo[2*Ny,0,:,:] = z
+                gen_mpo[3*Ny,0,:,:] = z
+                gen_mpo[4*Ny,0,:,:] = z
+            # Add operator to list of operators
+            if (xi == 0) and (yi == 0):
+                mpo.append(expand_dims(gen_mpo[ham_dim-1,:],0))
+            elif (xi == Nx-1) and (yi == Ny-1):
+                mpo.append(expand_dims(gen_mpo[:,0],1))
+            else:
+                mpo.append(gen_mpo)
+    mpoL.append(mpo)
+    mpoL = reorder_bonds(mpoL)
+    return mpoL
+
 ##########################################################################
 # Useful Functions
 ##########################################################################

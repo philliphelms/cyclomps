@@ -142,30 +142,35 @@ def tebd(ops,d=2,D=10,
         # Increase MBD if needed
         if (len(D)-1 > i) and (D[i+1] > D[i]):
             mps = increase_bond_dim(mps,D[i+1],fixed_bd=True,noise=1e-5)
+    
+    # Return resulting energy
+    return E
 
     
 if __name__ == "__main__":
     from cyclomps.mpo.tasep import return_mpo,return_tebd_ops
     from cyclomps.algs.dmrg1 import dmrg
-    N = 10
-    a = 0.35
-    b = 2./3.
-    s = -1.0
+    N = 30
+    a = 0.5
+    b = 0.5
     D = 10
-    # Get operators
-    ops = return_tebd_ops(N,(a,b,s))
-    ham = return_mpo(N,(a,b,s))
-    # Start by trying DMRG
-    E0,mps = dmrg(ham,
-                  mbd = D,
-                  max_iter = 5,
-                  nStates = 1,
-                  fixed_bd = True,
-                  return_state = True)
-    # Try again with TEBD
-    E = tebd(ops,
-             H = ham,
-             D        =[  D,  D,  D,  D,  D,  D,  D,  D,  D],
-             step_size=[ 1.,0.9,0.7,0.6,0.5,0.4,0.3,0.2,0.1],
-             n_step   =[ 10, 10, 10, 10, 10, 10, 10, 10, 10],
-             conv_tol=1e-8)
+    sVec = [-1.,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,-0.05,-0.01,0.,0.01,0.01,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+    for sind,s in enumerate(sVec):
+        # Get operators
+        ops = return_tebd_ops(N,(a,b,s))
+        ham = return_mpo(N,(a,b,s))
+        # Start by trying DMRG
+        E0,mps = dmrg(ham,
+                      mbd = D,
+                      max_iter = 5,
+                      nStates = 1,
+                      fixed_bd = True,
+                      return_state = True)
+        # Try again with TEBD
+        E = tebd(ops,
+                 H = ham,
+                 D        =[  D,  D,  D,  D,  D,  D,  D,  D,  D],
+                 step_size=[ 1.,0.9,0.7,0.6,0.5,0.4,0.3,0.2,0.1],
+                 n_step   =[ 10, 10, 10, 10, 10, 10, 10, 10, 10],
+                 conv_tol=1e-8)
+        print(s,E)
