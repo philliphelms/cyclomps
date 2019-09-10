@@ -13,10 +13,10 @@ def return_mpo(N,hamParams):
     # Extract Parameter Values
     Omega = hamParams[0]
     Delta = hamParams[1]
-    V     = hamparams[2]
+    V     = hamParams[2]
 
     # Create the main mpo
-    mpo = [None]*N
+    mpo = []
     for site in range(N):
 
         # Create the generic local operator
@@ -25,39 +25,44 @@ def return_mpo(N,hamParams):
         # First Site (row mpo)
         if (site == 0):
             # Create the MPO tensor
-            mpo[site] = array([[local_op, n, I]])
+            ten = array([[local_op, n, I]])
+            mpo.append(-ten)
 
         # Last site (column mpo)
         elif (site == N-1):
             # Creat the mpo tensor
-            mpo[site] = zeros((N+1,1,2,2),dtype=float_)
+            ten = zeros((N+1,1,2,2),dtype=float_)
 
             # Fill in column
-            mpo[site][0,0,:,:] = I
+            ten[0,0,:,:] = I
             for site2 in range(N-1):
-                coef = (N-site2+1)**(-6.)
-                mpo[site][site2+1,0,:,:] = coef*n
-            mpo[site][N-1,0,:,:] = local_op
+                coef = (N-site2-1)**(-6.)
+                ten[site2+1,0,:,:] = coef*n
+            ten[N,0,:,:] = local_op
+            mpo.append(ten)
 
         # Interior Sites (full mpo)
         else:
             # Create the mpo tensor
-            mpo[site] = zeros((site+2,site+3,2,2),dtype=float_)
+            ten = zeros((site+2,site+3,2,2),dtype=float_)
 
             # Fill in first column
-            mpo[site][0,0,:,:] = I
+            ten[0,0,:,:] = I
             for site2 in range(site):
                 coef = (site-site2)**(-6.)
-                mpo[site][site2+1,0,:,:] = coef*n
-            mpo[site][site+1,0,:,:] = local_op
+                ten[site2+1,0,:,:] = coef*n
+            ten[site+1,0,:,:] = local_op
 
             # Fill in bottom row
-            mpo[site][site+1,site+1] = n
-            mpo[site][site+1,site+2] = I
+            ten[site+1,site+1] = n
+            ten[site+1,site+2] = I
 
             # Fill in interior with identities
             for site2 in range(site):
-                mpo[site][site+1,site+1] = I
+                ten[site2+1,site2+1] = I
+
+            mpo.append(ten)
+
     mpo = [mpo]
     mpo = reorder_bonds(mpo)
     return mpo
