@@ -198,9 +198,9 @@ def single_bond_curr(N,hamParams,bond=None):
     mpo = [None]*N
     # Fill in mpo
     if bond == 'left':
-        mpo[0] = array([[(ea[ 0]-ed[ 0])*Sm - (eb[ 0]-eg[ 0])*Sp]])
+        mpo[0] = array([[(ea[ 0]-ed[ 0])*Sm + (eb[ 0]-eg[ 0])*Sp]])
     elif bond == 'right':
-        mpo[-1]= array([[(ea[-1]-ed[-1])*Sm - (eb[-1]-eg[-1])*Sp]])
+        mpo[-1]= array([[(ea[-1]-ed[-1])*Sm + (eb[-1]-eg[-1])*Sp]])
     else:
         mpo[bond] = array([[Sp,Sm]])
         mpo[bond+1] = array([[ep[bond]*Sm],

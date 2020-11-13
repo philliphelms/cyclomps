@@ -1002,7 +1002,7 @@ def dmrg(mpo,
     # ---------------------------------------------------------------------------------
     # Wrap Up Calculation
     # ---------------------------------------------------------------------------------
-    # Print time for dmrg procedure
+    # Prin://arxiv.org/abs/1706.09537t time for dmrg procedure
     timeprint(1,'Total time: {} s'.format(time.time()-t0))
 
     # Return results

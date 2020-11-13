@@ -69,8 +69,8 @@ class test_diag(unittest.TestCase):
         # Send to diagonalization routine
         E,mps0,ovlp = eig1(mps,mpo,envl,envr,alg='exact')
         mpiprint(0,'Exact Worked')
-        E,mps0,ovlp = eig1(mps,mpo,envl,envr,alg='arnoldi')
-        mpiprint(0,'Arnoldi Worked')
+        #E,mps0,ovlp = eig1(mps,mpo,envl,envr,alg='arnoldi')
+        #mpiprint(0,'Arnoldi Worked')
         E,mps0,ovlp = eig1(mps,mpo,envl,envr,alg='davidson')
         mpiprint(0,'Davidson Worked')
         mpiprint(0,'Passed\n'+'='*20)

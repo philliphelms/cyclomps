@@ -85,6 +85,65 @@ def create_mps_list(d,mbd,nStates,
     # Return result
     return mpsList
 
+def create_simple_state(d,loc_state,dtype=float_,loc='./'):
+    """
+    Create a list containing a matrix product state with bond
+    dimension 1 corresponding to the occupation given in occ
+
+    Args:
+        d : 1D Array
+            A list of the local state space dimension
+            for the system
+        loc_state : 1D Array
+            The local state of each site in the lattice
+
+    Kwargs:
+        dtype :
+            Indicate the data type for the tensors
+        subdir : str
+            A name for the subdirectory, under CALCDIR specified in 
+            cyclomps.tools.params, where this mpsList will be stored
+
+    Returns:
+        mps : list
+            A python list containing a single MPS, which
+            contains the filenames where the individual
+            tensors are located
+    """
+    state = 0
+    mpiprint(3,'Creating Simple MPS')
+
+    # Number of MPS sites
+    N = len(d)
+    
+    # Allocate list to hold MPS
+    mps = []
+
+    # Loop through sites, creating MPS at each site
+    for site in range(N):
+        
+        mpiprint(4,'\tAt Site {}'.format(site))
+
+        # Find required tensor dimensions
+        dims = calc_site_dims(site,d,1,
+                              periodic=False,
+                              fixed_bd=True)
+        
+        # Specify file location & name
+        fname = loc + '/state'+str(0)+'_site'+str(site)
+        tenDic = {'dims': dims, 'fname': fname, 'dtype': dtype}
+        mps.append(tenDic)
+        
+        # Create CTF/np array
+        tenTmp = rand(dims,dtype=dtype)
+        tenTmp = zeros(dims,dtype=dtype)
+        tenTmp[0,loc_state[site],0] = 1.
+        
+        # Save CTF/np array at given location
+        save_ten(tenTmp,tenDic['fname'])
+
+    return mps 
+
 def create_rand_mps(d,mbd,state,
                     sparse=False,dtype=float_,
                     periodic=False,fixed_bd=False,
@@ -228,7 +287,6 @@ def mps_save_ten(ten,mpsList,state,site):
 
     # Load Tensor
     save_ten(ten,fname)
-    # PH - Try to delete ten to free up memory
 
 def calc_site_dims(site,d,mbd,
                    periodic=False,fixed_bd=False):
@@ -1035,7 +1093,7 @@ def mps_conj(mpsList,copy=False,copy_subdir='mps_conj'):
             ten = conj(ten)
             mps_save_ten(ten,mpsList,state,site)
 
-def mps_copy(mpsList,subdir='mps'):
+def mps_copy(mpsList,subdir='copy_mps'):
     """
     Create a copy of an mpsList
 
@@ -1084,7 +1142,7 @@ def mps_copy(mpsList,subdir='mps'):
             # Update new MPS
             dims = mpsList[state][site]['dims']
             dtype= mpsList[state][site]['dtype']
-            tenDic = {'dims': dims, 'fname': old_fname, 'dtype': dtype}
+            tenDic = {'dims': dims, 'fname': new_fname, 'dtype': dtype}
             
             # Add to mps
             mps.append(tenDic)
@@ -1166,7 +1224,7 @@ def contract_config(mpsList,config,norm=None,state=0,gSite=0):
 
 def increase_bond_dim(mpsList,mbd,
                       copy=True,fixed_bd=False,
-                      copy_subdir='mps',periodic=False,
+                      copy_subdir='copied_mps',periodic=False,
                       noise=1.):
     """
     Create a copy of an mpsList
@@ -1323,3 +1381,13 @@ def contract(mps=None,mpo=None,lmps=None,state=None,lstate=None,gSite=None,glSit
 
     # Return resulting contracted value
     return result
+
+def calc_mbd(mps,state=0):
+    """
+    Return the largest bond dimension from the mps
+    """
+    mbd = 0
+    for site in range(len(mps[state])):
+        (d1,d2,d3) = mps[state][site]['dims']
+        mbd = max(mbd,d1,d3)
+    return mbd

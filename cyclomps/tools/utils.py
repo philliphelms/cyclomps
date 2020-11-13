@@ -89,16 +89,18 @@ def copyfile(old_fname,new_fname):
         except:
             _copyfile(old_fname+'.npy',new_fname+'.npy')
 
-from cyclomps.tools.mps_tools import mps_load_ten
-from cyclomps.tools.mps_tools import mps_save_ten
-from cyclomps.tools.env_tools import env_load_ten
-from cyclomps.tools.env_tools import env_save_ten
 
 def retrieve_tensors(site,mpsList=None,mpoList=None,envList=None,twoSite=False):
     """
     Retrieve tensors from the mps, mpo and env lists to use in eigenproblem
     """
+
     mpiprint(5,'Retrieving tensors for eigenproblem')
+
+    # Load relevant functions (if not already loaded)
+    if not "mps_load_ten" in dir():
+        from cyclomps.tools.mps_tools import mps_load_ten
+        from cyclomps.tools.env_tools import env_load_ten
 
     # Get info on mps and mpo
     if mpsList is not None: nStates = len(mpsList)
@@ -161,7 +163,13 @@ def save_tensors(site,
     """
     Save tensors into the mps and env lists
     """
+
     mpiprint(5,'Saving tensors from eigenproblem')
+
+    # Load relevant functions (if not already loaded)
+    if not "mps_save_ten" in dir():
+        from cyclomps.tools.mps_tools import mps_save_ten
+        from cyclomps.tools.env_tools import env_save_ten
 
     # Get info on mps and mpo
     if mpsList is not None: nStates = len(mpsList)

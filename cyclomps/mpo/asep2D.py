@@ -515,6 +515,7 @@ def curr_mpo(N,hamParams,
                 mpo = periodic_y_curr_y(Nx,Ny,hamParams)
             else:
                 mpo = open_curr_y(Nx,Ny,hamParams)
+    mpo = reorder_bonds(mpo)
     return mpo
 
 def single_bond_curr(Nx,Ny,hamParams,xbond,ybond,orientation):
@@ -1120,6 +1121,7 @@ def act_mpo(N,hamParams,
                 mpo = periodic_y_act_y(Nx,Ny,hamParams)
             else:
                 mpo = open_act_y(Nx,Ny,hamParams)
+    mpo = reorder_bonds(mpo)
     return mpo
 
 def single_bond_act(Nx,Ny,hamParams,xbond,ybond,orientation):

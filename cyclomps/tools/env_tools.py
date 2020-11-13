@@ -12,7 +12,7 @@ Date: June 2019
 from cyclomps.tools.utils import *
 from cyclomps.tools.mps_tools import mps_load_ten
 
-def alloc_env(mpsL,mpoL,dtype=None,subdir='env'):
+def alloc_env(mpsL,mpoL,mpslL=None,dtype=None,subdir='env'):
     """ 
     Allocate tensors for the dmrg environment tensors
 
@@ -24,6 +24,11 @@ def alloc_env(mpsL,mpoL,dtype=None,subdir='env'):
         mpoL : 1D Array
             A list of mpos, whose structure is described in 
             cyclomps.mpos, with some examples there
+
+    Kwargs:
+        mpslL : 1D Array
+            The matrix product state list for the ket state,
+            for which the environment is being created
 
     Returns:
         envL : 1D Array
@@ -44,6 +49,7 @@ def alloc_env(mpsL,mpoL,dtype=None,subdir='env'):
     loc = CALCDIR+subdir
 
     # Get details about mpo and mps
+    if mpslL is None: mpslL = mpsL
     nState = len(mpsL)
     nSite  = len(mpsL[0])
     nOps   = len(mpoL)
@@ -71,12 +77,13 @@ def alloc_env(mpsL,mpoL,dtype=None,subdir='env'):
         for site in range(nSite-1):
             # Find required dimensions
             mps_D = mpsL[0][site]['dims'][2]
+            mpsl_D= mpslL[0][site]['dims'][2]
             for op in range(nOps):
                 mpo_D=1
                 if mpoL[op][site] is not None:
                     _,_,_,mpo_D = mpoL[op][site].shape
             # Create tensor
-            dims = (mps_D,mpo_D,mps_D)
+            dims = (mpsl_D,mpo_D,mps_D)
             ten = zeros(dims,dtype=dtype)
             fname = loc + '/op'+str(op)+'_site'+str(site+1)
             envDic = {'dims': dims, 'fname': fname, 'dtype': dtype}
@@ -286,7 +293,7 @@ def update_env_right_local(mpsLoc,mpoLoc,envLoc,mpslLoc=None,ts=0):
         # Do Contraction to update env
         if mpoLoc[op] is None:
             envNew = einsum('Bcb,BqA->cbqA',envLoc[op],conj(mpslLoc[ts]))
-            envNew = einsum('bpa,cbqA->Aca',mpsLoc[ts],envNew)
+            envNew = einsum('bpa,cbpA->Aca',mpsLoc[ts],envNew)
         else:
             envNew = einsum('Bcb,BqA->cbqA',envLoc[op],conj(mpslLoc[ts]))
             envNew = einsum('cqpd,cbqA->pdbA',mpoLoc[op],envNew)
@@ -411,7 +418,7 @@ def calc_env(mpsList,mpoList,mpslList=None,dtype=None,subdir='env',gSite=0,state
     # Make env same dtype as mps
     if dtype is None: dtype = mpsList[0][0]['dtype']
     # Allocate Environment
-    envList = alloc_env(mpsList,mpoList,dtype=dtype,subdir=subdir)
+    envList = alloc_env(mpsList,mpoList,mpslL=mpslList,dtype=dtype,subdir=subdir)
     # Calculate Environment from the right
     for site in range(nSite-1,gSite,-1):
         envList = update_env_left(mpsList,mpoList,envList,site,mpslList=mpslList,state=state)

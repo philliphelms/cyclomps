@@ -19,6 +19,8 @@ from numpy import float_
 from numpy import real as npreal
 from numpy import imag as npimag
 from numpy import exp as npexp
+from numpy.linalg import inv as npinv
+from numpy.linalg import pinv as nppinv
 
 # Tensor Allocation
 def array(tens,dtype=None,copy=True,subok=False,ndimin=0):
@@ -57,6 +59,16 @@ eigh       = ctf.eigh
 #        return summ(res)
 #    else:
 #        return res
+def inv(m):
+    m = to_nparray(m)
+    m = npinv(m)
+    m = from_nparray(m)
+    return m
+def pinv(m):
+    m = to_nparray(m)
+    m = nppinv(m)
+    m = from_nparray(m)
+    return m
 def exp(m):
     m = to_nparray(m)
     m = npexp(m)

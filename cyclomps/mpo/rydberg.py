@@ -20,13 +20,13 @@ def return_mpo(N,hamParams):
     for site in range(N):
 
         # Create the generic local operator
-        local_op = -Omega*Sx - Delta*n
+        local_op = Omega*Sx - Delta*v
         
         # First Site (row mpo)
         if (site == 0):
             # Create the MPO tensor
-            ten = array([[local_op, n, I]])
-            mpo.append(-ten)
+            ten = array([[local_op, v, I]])
+            mpo.append(ten)
 
         # Last site (column mpo)
         elif (site == N-1):
@@ -36,8 +36,8 @@ def return_mpo(N,hamParams):
             # Fill in column
             ten[0,0,:,:] = I
             for site2 in range(N-1):
-                coef = (N-site2-1)**(-6.)
-                ten[site2+1,0,:,:] = coef*n
+                coef = V*(N-site2-1)**(-6.)
+                ten[site2+1,0,:,:] = coef*v
             ten[N,0,:,:] = local_op
             mpo.append(ten)
 
@@ -49,12 +49,12 @@ def return_mpo(N,hamParams):
             # Fill in first column
             ten[0,0,:,:] = I
             for site2 in range(site):
-                coef = (site-site2)**(-6.)
-                ten[site2+1,0,:,:] = coef*n
+                coef = V*(site-site2)**(-6.)
+                ten[site2+1,0,:,:] = coef*v
             ten[site+1,0,:,:] = local_op
 
             # Fill in bottom row
-            ten[site+1,site+1] = n
+            ten[site+1,site+1] = v
             ten[site+1,site+2] = I
 
             # Fill in interior with identities

@@ -47,7 +47,7 @@ def list_configs(d):
                 new_configs.append( [config] + old_configs[old_config_ind] )
         return new_configs
 
-def mpo2mat(mpoList):
+def mpo2mat(mpoList,dloc=2):
     """ 
     Convert an mpoList to a matrix operator
 
