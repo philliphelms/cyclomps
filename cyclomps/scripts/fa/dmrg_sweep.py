@@ -64,12 +64,17 @@ for sind,s in enumerate(sVec):
                left=left)
 
     # Collect output
-    E0  = out[0]
-    E0l = out[1]
-    mps = out[2]
-    mpsl= out[3]
-    env = out[4]
-    envl= out[5]
+    if left:
+        E0  = out[0]
+        E0l = out[1]
+        mps = out[2]
+        mpsl= out[3]
+        env = out[4]
+        envl= out[5]
+    else:
+        E0  = out[0]
+        mps = out[1]
+        env = out[2]
 
     # Save and print out energies
     E0_vec.append(real(E0[0]))
