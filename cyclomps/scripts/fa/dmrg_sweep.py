@@ -13,9 +13,7 @@ for i in range(2,len(argv)):
 
 # Hamiltonian Parameters
 c = 0.2
-#sVec = logspace(-5,0,30)[::-1]
 sVec = linspace(-1,1,30)
-#sVec = [-0.02,-0.01,0.,0.1,0.2]
 
 # Calculate Settings
 hermitian = True # Use the hermitian version of the FA hamiltonian
@@ -30,7 +28,7 @@ fixed_bd = True
 state_avg = True
 orthonormalize = False
 end_gauge = 0 
-left = False
+left = True
 
 # Somewhere to store resulting E
 E0_vec = []
@@ -45,25 +43,35 @@ for sind,s in enumerate(sVec):
     mpo = return_mpo(N,hamParams,hermitian=hermitian)
 
     # Run diagonalization
-    E0,mps,env = dmrg(mpo,
-                      alg=alg,
-                      mps=mps,
-                      env=env,
-                      return_state=True,
-                      return_env=True,
-                      dtype=complex_,
-                      mbd =mbd,
-                      tol=tol,
-                      max_iter=max_iter,
-                      min_iter=min_iter,
-                      mps_subdir=mps_dir,
-                      env_subdir=env_dir, 
-                      nStates=nStates,
-                      fixed_bd=fixed_bd,
-                      state_avg=state_avg,
-                      orthonormalize=orthonormalize,
-                      end_gauge=end_gauge,
-                      left=left)
+    out = dmrg(mpo,
+               alg=alg,
+               mps=mps,
+               env=env,
+               return_state=True,
+               return_env=True,
+               dtype=complex_,
+               mbd =mbd,
+               tol=tol,
+               max_iter=max_iter,
+               min_iter=min_iter,
+               mps_subdir=mps_dir,
+               env_subdir=env_dir, 
+               nStates=nStates,
+               fixed_bd=fixed_bd,
+               state_avg=state_avg,
+               orthonormalize=orthonormalize,
+               end_gauge=end_gauge,
+               left=left)
+
+    # Collect output
+    E0  = out[0]
+    E0l = out[1]
+    mps = out[2]
+    mpsl= out[3]
+    env = out[4]
+    envl= out[5]
+
+    # Save and print out energies
     E0_vec.append(real(E0[0]))
     E1_vec.append(real(E0[1]))
     for sind2 in range(len(E0_vec)):
