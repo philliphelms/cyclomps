@@ -501,9 +501,9 @@ def svd_ten(ten,split_ind,mbd=None,return_ent=True,return_wgt=True):
 
     # Reshape to match correct tensor format
     mpiprint(9,'Reshape to match original tensor dimensions')
-    new_dims = ten_shape[:split_ind]+(prod(U.shape)/prod(ten_shape[:split_ind]),)
+    new_dims = ten_shape[:split_ind]+(int(prod(U.shape)/prod(ten_shape[:split_ind])) ,)
     U = U.reshape(new_dims)
-    new_dims = (prod(V.shape)/prod(ten_shape[split_ind:]),)+ten_shape[split_ind:]
+    new_dims = (int(prod(V.shape)/prod(ten_shape[split_ind:])),)+ten_shape[split_ind:]
     V = V.reshape(new_dims)
 
     # Print some results

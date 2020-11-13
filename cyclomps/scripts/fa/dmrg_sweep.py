@@ -41,7 +41,7 @@ env = None
 for sind,s in enumerate(sVec):
     
     # Set up mpo
-    hamParams = array([c,s])
+    hamParams = array([c,s,0.])
     mpo = return_mpo(N,hamParams,hermitian=hermitian)
 
     # Run diagonalization

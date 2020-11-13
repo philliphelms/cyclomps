@@ -12,7 +12,7 @@ N = int(argv[1])
 
 # Hamiltonian Parameters
 c = 0.1
-mu = 1
+mu = 0
 sVec = linspace(-0.5,0.5,20)
 #sVec = logspace(-5,0,100)
 #sVec = array([-0.5])
