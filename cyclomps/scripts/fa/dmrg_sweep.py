@@ -1,6 +1,7 @@
 from cyclomps.tools.utils import *
 from cyclomps.algs.dmrg1 import dmrg
 from cyclomps.mpo.fa import return_mpo
+from cyclomps.tools.mps_tools import contract_config
 from numpy import complex as complex_
 from sys import argv
 from numpy import logspace,linspace 
@@ -12,23 +13,23 @@ for i in range(2,len(argv)):
     mbd.append(int(argv[i]))
 
 # Hamiltonian Parameters
-c = 0.2
-sVec = linspace(-1,1,30)
+c = 0.5
+sVec = linspace(0,0.2,30)
 
 # Calculate Settings
-hermitian = True # Use the hermitian version of the FA hamiltonian
+hermitian = False # Use the hermitian version of the FA hamiltonian
 alg = 'davidson'
 tol = 1e-5
-max_iter = 2
+max_iter = 10
 min_iter = 0 
 mps_dir = 'fa_mps'
 env_dir = 'fa_env'
-nStates = 2
+nStates = 3
 fixed_bd = True
 state_avg = True
 orthonormalize = False
 end_gauge = 0 
-left = True
+left = False
 
 # Somewhere to store resulting E
 E0_vec = []
@@ -39,6 +40,7 @@ env = None
 for sind,s in enumerate(sVec):
     
     # Set up mpo
+    print('s = {}'.format(s))
     hamParams = array([c,s,0.])
     mpo = return_mpo(N,hamParams,hermitian=hermitian)
 
@@ -75,6 +77,13 @@ for sind,s in enumerate(sVec):
         E0  = out[0]
         mps = out[1]
         env = out[2]
+
+    # Just for fun, contract configuration sample
+    #rand_config = [0 if np.random.random() > 0.5 else 1 for i in range(N)]
+    #print(rand_config)
+    #config_sample = contract_config(mps,
+    #                                rand_config)
+    #print('Configuration sample value = {}'.format(config_sample))
 
     # Save and print out energies
     E0_vec.append(real(E0[0]))

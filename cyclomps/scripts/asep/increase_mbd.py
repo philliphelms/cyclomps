@@ -6,7 +6,7 @@ import cProfile
 import pstats
 
 # System Size
-N = 100
+N = 10
 
 # Hamiltonian Parameters
 alpha = 0.5
@@ -28,8 +28,8 @@ alg = 'davidson'
 tol = 1e-5
 max_iter = 1
 min_iter = 1
-mps_dir = asep_mps
-env_dir = asep_env
+mps_dir = 'asep_mps'
+env_dir = 'asep_env'
 nStates = 1
 fixed_bd = True
 state_avg = False
@@ -41,21 +41,18 @@ left = False
 mpo = return_mpo(10,(alpha,gamma,p,q,beta,delta,s))
 
 # Run DMRG
-cProfile.run("\
-        E0 = dmrg(mpo,\
-                  alg="+alg",\
-                  dtype=complex_,mbd = "+str(mbd)+",\
-                  tol="+str(tol)",\
-                  max_iter="+str(max_iter)",\
-                  min_iter="+str(min_iter)",\
-                  mps_subdir="+mps_dir ",\
-                  env_subdir="+env_dir ",\
-                  nStates="+str(nStates)",\
-                  fixed_bd="+str(fixed_bd)",\
-                  state_avg="+str(state_avg)",\
-                  orthonormalize="+str(orthonormalize)",\
-                  end_gauge="+str(end_gauge)",\
-                  left="+str(left)")",
-                  'n'+str(n)+'_dmrg_stats_'+str(mbdVec))
-if RANK == 0:
-    p = pstats.Stats('n'+str(n)+'_dmrg_stats_'+str(mbdVec))
+E0 = dmrg(mpo,
+          alg=alg,
+          dtype=complex_,
+          mbd = mbd,
+          tol=tol,
+          max_iter=max_iter,
+          min_iter=min_iter,
+          mps_subdir=mps_dir,
+          env_subdir=env_dir,
+          nStates=nStates,
+          fixed_bd=fixed_bd,
+          state_avg=state_avg,
+          orthonormalize=orthonormalize,
+          end_gauge=end_gauge,
+          left=left)

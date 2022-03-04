@@ -1165,7 +1165,7 @@ def calc_mps_norm(mps,state=0):
     norm = norm_env[0,0]
     return norm
 
-def contract_config(mpsList,config,norm=None,state=0,gSite=0):
+def contract_config(mpsList,config,normalize=True,state=0,gSite=0):
     """
     Contract the mps to give the coefficient for a given configurations
 
@@ -1181,10 +1181,8 @@ def contract_config(mpsList,config,norm=None,state=0,gSite=0):
             [0,1,1,0,0,1,1,0]
 
     Kwargs:
-        norm : str
-            'L1' -> Use L1 Norm
-            'L2' -> Use L2 Norm
-            None -> Use current normalization
+        normalize : bool
+            If true, then the state will be normalized
         state : int
             The state of interest, default is 0
         gSite : int
@@ -1201,13 +1199,6 @@ def contract_config(mpsList,config,norm=None,state=0,gSite=0):
     nState = len(mpsList)
     nSite  = len(mpsList[0])
 
-    # Check Normalization
-    gTen = mps_load_ten(mpsList,state,gSite)
-    if norm == 'L1':
-        mps[state][gSite] /= einsum('apb->',gTen)
-    elif norm == 'L2':
-        mps[state][gSite] /= einsum('apb,apb->',gTen,conj(gTen))
-
     # Contract MPS for given config
     ten1 = mps_load_ten(mpsList,state,0)
     ten1 = ten1[:,config[0],:]
@@ -1217,8 +1208,13 @@ def contract_config(mpsList,config,norm=None,state=0,gSite=0):
         ten1 = einsum('ab,bc->ac',ten1,ten2)
     
     # Contract once again (just in case its periodic)
-    val = einsum('ab->',ten1) # PH - Should this be aa-> or ab-> ???
+    val = einsum('aa->',ten1) 
 
+    # Normalize (if desired)
+    if normalize:
+        val /= calc_mps_norm(mpsList, state=state)
+
+    # Return result
     return val
 
 
