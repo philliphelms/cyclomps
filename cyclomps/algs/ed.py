@@ -15,12 +15,6 @@ def ed(mpo,left=False):
     H = mpo2mat(mpo)
     H = to_nparray(H)
     (nx,ny) = H.shape
-    if False:
-        for y in range(ny):
-            string = ''
-            for x in range(nx):
-                string += '{} '.format(H[x,y])
-            print(string)
     # Solve eigenproblem
     if left:
         e,vl,vr = sla.eig(H,left=True)

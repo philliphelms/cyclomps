@@ -1,10 +1,10 @@
 import os, sys
-from mpi4py import MPI
+#from mpi4py import MPI
 
 # MPI Global Variables
-COMM = MPI.COMM_WORLD
-RANK = COMM.Get_rank()
-SIZE = COMM.size
+COMM = 0#MPI.COMM_WORLD
+RANK = 0#COMM.Get_rank()
+SIZE = 1#COMM.size
 #print('Rank = {}'.format(RANK))
 
 # Temporary directories for calculation
@@ -49,6 +49,6 @@ ARNOLDI_TOL = 1e-8
 ARNOLDI_MAX_ITER = 100
 
 # Memory Global Variables
-import psutil
-_,av,_,_,_,_,_,_,_,_,_ = psutil.virtual_memory()
-MAX_MEMORY = av
+#import psutil
+#_,av,_,_,_,_,_,_,_,_,_ = psutil.virtual_memory()
+MAX_MEMORY = None

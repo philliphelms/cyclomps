@@ -14,7 +14,7 @@ from scipy.linalg import expm as sla_expm
 import copy
 
 def expm(m,a=1.):
-    """ 
+    """
     Take the exponential of a matrix
     """
     m = to_nparray(m)
@@ -48,12 +48,12 @@ def list_configs(d):
         return new_configs
 
 def mpo2mat(mpoList,dloc=2):
-    """ 
+    """
     Convert an mpoList to a matrix operator
 
     Args:
         mpoList : 1D Array
-            An array that contains a list of mpos, each of which 
+            An array that contains a list of mpos, each of which
             is a list with an array for each site in the lattice
             representing the mpo at that site.
 
@@ -79,7 +79,7 @@ def mpo2mat(mpoList,dloc=2):
     # Allocate memory for matrix operator
     matDim = prod(d)
     mat = zeros((matDim,matDim))
-    
+
     configs = list_configs(d)
     # Loop through all possible incoming states
     for i in range(len(configs)):
@@ -103,7 +103,8 @@ def mpo2mat(mpoList,dloc=2):
                         identity = array(nparray([[npeye(2)]]))
                         identity = einsum('abpq->apqb',identity)
                         tmp_mat = einsum('ab,bc->ac',tmp_mat,identity[:,istate,jstate,:])
-                mat[i,j] += tmp_mat[[0]]
+                print(tmp_mat[0,0])
+                mat[i,j] += tmp_mat[0,0]
     return mat
 
 def mpo_conj_trans(mpoList,copy=True):
@@ -112,7 +113,7 @@ def mpo_conj_trans(mpoList,copy=True):
 
     Args:
         mpoList : 1D Array
-            An array that contains a list of mpos, each of which 
+            An array that contains a list of mpos, each of which
             is a list with an array for each site in the lattice
             representing the mpo at that site.
 
@@ -121,7 +122,7 @@ def mpo_conj_trans(mpoList,copy=True):
             A conjugated, transposed version of the input mpo
     """
     mpiprint(5,'Taking the conjugate transpose of the mpo list')
-        
+
     # Copy the mpo list (if desired)
     if copy: mpoList = copy_mpo(mpoList)
 
@@ -142,10 +143,10 @@ def mpo_conj_trans(mpoList,copy=True):
 def copy_mpo(mpoList):
     """
     Copy an mpo list
-    
+
     Args:
         mpoList : 1D Array
-            An array that contains a list of mpos, each of which 
+            An array that contains a list of mpos, each of which
             is a list with an array for each site in the lattice
             representing the mpo at that site.
 
@@ -161,7 +162,7 @@ def copy_mpo(mpoList):
 
     # Create list to copy mpo list into
     mpoListCopy = []
-    
+
     # Loop over operators
     for op in range(nOps):
         mpo = [None]*nSite
@@ -190,7 +191,7 @@ def reorder_bonds(mpoList):
 
     Args:
         mpoList : 1D Array
-            An array that contains a list of mpos, each of which 
+            An array that contains a list of mpos, each of which
             is a list with an array for each site in the lattice
             representing the mpo at that site.
 
@@ -221,7 +222,7 @@ def mpo_local_dim(mpoList):
 
     Args:
         mpoList : 1D array
-            An array that contains a list of mpos, each of which 
+            An array that contains a list of mpos, each of which
             is a list with an array for each site in the lattice
             representing the mpo at that site.
 
